@@ -1,0 +1,441 @@
+LYVO Platform Technical Documentation
+Version 1.0 – MVP Specification
+Product Name: LYVO
+Meaning: Legitimate Yielding Verified Operators
+Tagline: The Trust Layer for Digital Commerce
+________________________________________
+1. PROJECT OVERVIEW
+Introduction
+LYVO is a trust-based digital commerce platform designed to help customers safely discover and transact with legitimate online businesses.
+The platform verifies operators through:
+•	Ghana Card registration 
+•	Identity verification 
+•	Video verification 
+and protects customer transactions through an escrow payment system integrated with Moolre APIs. > https://docs.moolre.com/
+Moolre's APIs follow REST principles and accept requests and return responses in JSON. All our live APIs are available over HTTPS at https://api.moolre.com, while our sandbox environment is available at https://sandbox.moolre.com.
+Here, integration will be using the Laravel api and will be decoupled from other parts of the application so we can be able to add other payment providers and switch easily.
+________________________________________
+Problem Statement
+In Ghana, many online transactions occur through:
+•	WhatsApp 
+•	Instagram 
+•	TikTok 
+•	Facebook 
+There is currently no trusted system that allows buyers to verify whether a seller is legitimate before making a payment.
+This leads to:
+•	Fraud 
+•	Lost money 
+•	Low trust in online commerce 
+
+LYVO is a trust-based digital commerce platform that verifies online businesses through identity verification, Ghana Card registration, and video verification, while enabling secure transactions through an escrow system.
+
+The platform should feel like a premium fintech/trust-tech product similar to Stripe, Paystack, or Flutterwave, with a strong focus on security, verification, and trust.
+
+🎨 BRANDING & UI DESIGN SYSTEM
+
+Use the LYVO logo color scheme throughout the platform.
+
+Primary Gradient
+Deep Blue: #0B5FA5
+Teal: #0F9B8E
+Trust Green: #0EA86F
+Deep Green: #0B8F6A
+Secondary Colors
+White: #FFFFFF
+Light Gray: #F5F7FA
+Dark Navy: #0B1220
+Design Style
+Modern SaaS / Fintech
+Rounded corners (16–20px)
+Smooth gradients
+Soft shadows
+Glassmorphism effects on cards
+Clean typography
+Premium trust-focused design
+Mobile-first responsive layout
+Visual Identity
+
+Every screen should communicate:
+
+Trust
+Verification
+Security
+Professionalism
+
+Use shield, checkmark, identity, escrow, and trust-inspired iconography.
+
+LANDING PAGE
+Hero Section
+
+Headline:
+
+Trade With Confidence
+
+Subheadline:
+
+Discover verified businesses, protected transactions, and trusted operators across Ghana.
+
+Buttons:
+
+Get Started
+Browse Operators
+Login as Guest
+
+Hero image:
+
+Animated LYVO logo
+Trust network illustration
+Escrow protection visual
+👤 AUTHENTICATION SYSTEM
+Login Options
+Customer Login
+Email
+Phone Number
+Password
+Operator Login
+Email
+Phone Number
+Password
+Guest Login
+
+Allow users to:
+
+Browse operators
+View profiles
+Search businesses
+Read reviews
+
+Guest users cannot:
+
+Initiate transactions
+Contact operators
+Leave reviews
+Access escrow
+
+Display:
+
+Sign Up To Unlock Secure Transactions
+
+📝 REGISTRATION SYSTEM
+Customer Registration
+
+Fields:
+
+Full Name
+Phone Number
+Email
+Password
+
+
+Operator Registration
+Step 1 — Business Information
+Fields:
+
+Business Name
+Owner Full Name
+Phone Number
+Email
+Business Category
+Business Location
+Business Description
+
+Step 2 — Ghana Card Verification
+Via https://docs.metamap.com/reference/govcheck-ghana-verify-card
+
+Fields:
+
+Ghana Card Number
+Ghana Card Upload (Front)
+Ghana Card Upload (Back)
+
+Display:
+
+Identity verification required before approval.
+
+Step 3 — Video Verification
+
+Allow operator to:
+
+Record a live verification video
+OR
+Upload a short video
+
+Instructions:
+
+Face must be visible
+State your business name
+State your full name
+Show the Ghana Card briefly
+
+Display:
+
+Video verification helps protect customers and reduce fraud.
+
+Status:
+
+Pending Review
+Approved
+Rejected
+
+Each vendor account will be in pending status to restrict vendor dashboard access till fully reviewed.
+
+
+Step 4 — Business Verification Status
+
+Show progress tracker:
+
+✓ Registration Submitted
+
+✓ Ghana Card Uploaded
+
+✓ Video Verification Submitted
+
+⏳ Admin Review
+
+✓ Verified Operator
+
+🛍️ VERIFIED OPERATOR DIRECTORY
+
+Only VERIFIED operators should appear publicly.
+
+Features:
+
+Search bar
+Category filters
+Location filters
+Trending operators
+New operators
+Top-rated operators
+
+Categories:
+
+Fashion
+Electronics
+Beauty
+Food
+Services
+Automotive
+Home & Living
+Health
+
+Display operator cards with:
+
+Business logo
+Business name
+Verification badge
+Rating
+Location
+Category
+🏢 OPERATOR PROFILE PAGE
+
+Display:
+
+Header
+Cover photo
+Profile image
+Business name
+Verified Operator badge
+Business Details
+Description
+Location
+Operating hours
+Contact details
+Verification Section
+
+Show:
+
+Identity Verified
+Ghana Card Verified
+Video Verified
+Products & Services
+
+Card-based layout
+
+Reviews & Ratings
+Contact Options
+Message
+Call
+WhatsApp
+Trust Score
+
+Display score:
+
+0–100
+
+Factors:
+
+Verification level
+Reviews
+Transaction history
+💰 ESCROW SYSTEM
+
+Simulate full escrow flow.
+
+Customer Flow
+
+Customer selects product/service.
+
+Clicks:
+
+Pay with LYVO Escrow
+
+Status Flow:
+
+Payment Initiated
+Funds Held Securely
+Seller Processing
+Delivered
+Funds Released
+Operator Flow
+
+Operator receives:
+
+Funds Held in Escrow
+
+Buttons:
+
+Mark Processing
+Mark Delivered
+Buyer Confirmation
+
+Buttons:
+
+Confirm Delivery
+Raise Dispute
+Dispute Flow
+
+Status:
+
+Under Review
+
+Admin decides:
+
+Refund Buyer
+Release Funds
+📊 CUSTOMER DASHBOARD
+
+Sections:
+
+Overview
+Transactions
+Saved Operators
+Reviews
+Escrow Transactions
+Pending
+Delivered
+Released
+Trust Activity
+Reports submitted
+Reviews posted
+🏢 OPERATOR DASHBOARD
+Overview
+Profile views
+Leads received
+Transactions
+Verification Status
+
+Display:
+
+Ghana Card Status
+Video Verification Status
+Trust Score
+Products & Services
+
+Add/Edit/Delete
+
+Escrow Transactions
+
+View:
+
+Held Funds
+Released Funds
+Pending Deliveries
+🛡️ ADMIN DASHBOARD
+
+Professional enterprise dashboard.
+
+Verification Center
+
+Review:
+
+Ghana Card submissions
+Video verifications
+Business applications
+
+Approve / Reject
+
+User Management
+
+View:
+
+Customers
+Operators
+Guest users
+Escrow Management
+
+Monitor:
+
+Held funds
+Released funds
+Disputes
+Reports & Fraud Monitoring
+
+Review:
+
+Fraud reports
+Suspicious accounts
+Trust violations
+
+Actions:
+
+Suspend
+Ban
+Reverify
+⭐ TRUST SCORE SYSTEM
+
+Create dynamic trust score.
+
+Factors:
+
+Ghana Card verified
+Video verified
+Positive reviews
+Successful transactions
+Account age
+
+Levels:
+
+🟢 Trusted Operator (90–100)
+
+🔵 Verified Operator (70–89)
+
+🟡 Growing Operator (50–69)
+
+🔴 Under Review (<50)
+
+📱 MOBILE EXPERIENCE
+
+Design fully responsive mobile screens.
+
+Bottom navigation:
+
+Home
+Search
+Escrow
+Messages
+Profile
+🔥 MVP GOAL
+
+Build a realistic, startup competition-ready prototype that demonstrates:
+
+Ghana Card verification
+Video verification
+Verified operator discovery
+Guest account access
+Trust score system
+Escrow transaction protection
+Admin verification workflow
+Product Tagline
+
+LYVO — The Trust Layer for Digital Commerce.
+

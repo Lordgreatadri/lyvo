@@ -1,0 +1,100 @@
+@import url('https://fonts.bunny.net/css?family=sora:400,500,600,700,800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-surface-muted text-ink antialiased;
+    }
+    [x-cloak] {
+        display: none !important;
+    }
+    .h-18 {
+        height: 4.5rem;
+    }
+}
+
+@layer components {
+    /* ---------- Buttons ---------- */
+    .btn {
+        @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-sm font-semibold transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-primary-400 focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed;
+    }
+    .btn-primary {
+        @apply btn bg-lyvo-gradient text-white shadow-glow hover:opacity-95 hover:-translate-y-0.5;
+    }
+    .btn-dark {
+        @apply btn bg-ink text-white hover:bg-ink-soft;
+    }
+    .btn-outline {
+        @apply btn border border-slate-200 bg-white text-ink hover:border-primary-400 hover:text-primary-600;
+    }
+    .btn-ghost {
+        @apply btn text-ink hover:bg-slate-100;
+    }
+    .btn-sm {
+        @apply px-3.5 py-2 text-xs;
+    }
+
+    /* ---------- Cards & surfaces ---------- */
+    .card {
+        @apply rounded-2xl border border-slate-100 bg-white shadow-soft;
+    }
+    .card-hover {
+        @apply transition-all duration-200 hover:-translate-y-1 hover:shadow-card;
+    }
+    .glass {
+        @apply border border-white/40 bg-white/70 shadow-soft backdrop-blur-xl;
+    }
+
+    /* ---------- Badges ---------- */
+    .badge {
+        @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
+    }
+    .badge-verified {
+        @apply badge bg-primary-50 text-primary-700;
+    }
+    .badge-pending {
+        @apply badge bg-amber-50 text-amber-700;
+    }
+    .badge-rejected {
+        @apply badge bg-rose-50 text-rose-700;
+    }
+    .badge-info {
+        @apply badge bg-sky-50 text-sky-700;
+    }
+
+    /* ---------- Forms ---------- */
+    .form-input,
+    .form-select,
+    .form-textarea {
+        @apply w-full rounded-xl border-slate-200 bg-white text-sm text-ink shadow-sm transition focus:border-primary-400 focus:ring-primary-400;
+    }
+    .form-label {
+        @apply mb-1.5 block text-sm font-medium text-ink-soft;
+    }
+
+    /* ---------- Layout helpers ---------- */
+    .container-lyvo {
+        @apply mx-auto w-full max-w-7xl px-4 sm:px-6 lg:px-8;
+    }
+    .section {
+        @apply py-16 sm:py-24;
+    }
+    .text-gradient {
+        @apply bg-lyvo-gradient bg-clip-text text-transparent;
+    }
+    .eyebrow {
+        @apply inline-flex items-center gap-2 rounded-full border border-primary-100 bg-primary-50 px-4 py-1.5 text-xs font-semibold uppercase tracking-wider text-primary-700;
+    }
+
+    /* ---------- Sidebar nav ---------- */
+    .side-link {
+        @apply flex items-center gap-3 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-500 transition hover:bg-slate-100 hover:text-ink;
+    }
+    .side-link-active {
+        @apply bg-primary-50 text-primary-700 hover:bg-primary-50 hover:text-primary-700;
+    }
+}
+
