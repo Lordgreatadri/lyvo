@@ -4,6 +4,81 @@ All notable changes to the LYVO platform are documented here. Dates use `YYYY-MM
 
 ---
 
+## [Unreleased] — Authorization (RBAC)
+
+> Role-based access control built on **spatie/laravel-permission**. Roles map 1:1 to
+> `AccountType` (admin / customer / operator); guests remain unauthenticated public
+> visitors (session flag, not a role). A central permission catalog is the single
+> source of truth, admins get a super-admin gate, and every privileged action is
+> gated by a policy or `permission:*` check. Admins can manage users, approve
+> operators, freeze/unfreeze accounts, assign roles, and tune each role's permissions.
+
+### Added
+
+**Authorization core**
+- `Support\Permissions` — single source of truth for the permission catalog. Grouped
+  by domain (verification, users, roles, escrow, disputes, products, reviews, reports,
+  directory, addresses, payment methods) with `groups()` (UI), `all()` (flat) and
+  `forRole(AccountType)` (default matrix).
+- `Policies\UserPolicy` — `viewAny/view/approve/suspend/assignRoles/delete`; self-guard
+  prevents an admin from freezing / re-roling / deleting their own account.
+- `Policies\RolePolicy` — `viewAny/update`.
+- `Providers\AuthServiceProvider` — registers policies and a `Gate::before`
+  super-admin short-circuit for the admin role.
+
+**Admin user & role management**
+- `Admin\UserController` — searchable/filterable user directory (type, status, pending
+  operators, free-text), user detail, approve operator, freeze/unfreeze, assign roles.
+- `Admin\RoleController` — grouped permission editor per role.
+- `Services\OperatorReviewService` — shared operator verification state machine
+  (`markInReview/approve/reject`) with transactional audit events, reused by the
+  operator-approval and user-management controllers.
+- Form requests `Admin\UpdateUserRolesRequest`, `Admin\UpdateRolePermissionsRequest`.
+- Views `admin/users/index`, `admin/users/show`, `admin/roles/index`.
+
+**Profile & settings (all roles)**
+- Branded, role-aware `settings/profile` page (personal info, password, delete account)
+  rendered inside each dashboard. Changing email or phone resets its verification and
+  re-issues an OTP.
+
+### Changed
+- `User` model — account-status helpers `isActive/isFrozen/isBanned/freeze/unfreeze`.
+- `UserStatus` enum — `badgeColor()` + `description()` for status UI.
+- `RolePermissionSeeder` — idempotent; builds roles from `AccountType` and syncs the
+  default permission matrix from `Support\Permissions`.
+- `Admin\OperatorApprovalController` — refactored onto `OperatorReviewService`, with
+  `permission:*` authorization on review/approve/reject.
+- `ProfileController` + `ProfileUpdateRequest` — real profile updates (name, email,
+  phone) with contact re-verification.
+- Dashboard navigation — admin **Users** → user management, new **Roles** entry, and a
+  **Settings** entry for every role.
+- `routes/web.php` — admin `users.*` and `roles.*` routes under
+  `auth + verified.contacts + account:admin`.
+
+### Notes
+- Guests are unauthenticated read-only visitors (session flag `lyvo_guest`), not a
+  Spatie role.
+- Re-seed permissions after changes: `php artisan db:seed --class=RolePermissionSeeder`.
+
+### Fixed (PR review)
+- **Super-admin gate no longer defeats self-guards** — `Gate::before` now defers the
+  self-guarded policy abilities (`suspend`, `assignRoles`, `delete`) to the policy, so
+  an admin still cannot freeze / re-role / delete their own account.
+- **Status vs. reactivation mismatch** — `User::unfreeze()` only reactivates a *frozen*
+  (suspended) account and leaves *banned* accounts untouched; added `ban()` / `unban()`
+  so the "permanently blocked" description holds true.
+- **PATCH profile semantics** — `ProfileUpdateRequest` uses `sometimes` so partial
+  updates (e.g. name + email only) are still valid; contacts are validated only when
+  present.
+- **Permission constants** — `OperatorApprovalController` authorizes via
+  `Support\Permissions::VERIFICATION_*` constants instead of raw strings.
+- **UI copy** — fixed double-escaped "&amp;" in the Profile and Roles page headings.
+- **Tests** — added `Admin\UserManagementTest` and `Admin\RolePermissionTest` covering
+  access control, freeze/unfreeze, role assignment, operator approval and the self-guard
+  rails; `UserFactory` now seeds `account_type` + `status`.
+
+---
+
 ## [Unreleased] — Authentication
 
 > Single `users` table for every actor (admin / customer / operator), discriminated

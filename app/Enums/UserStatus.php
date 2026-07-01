@@ -23,4 +23,25 @@ enum UserStatus: string
     {
         return $this === self::Active;
     }
+
+    /**
+     * Tailwind colour stem used by status badges in the admin UI.
+     */
+    public function badgeColor(): string
+    {
+        return match ($this) {
+            self::Active => 'emerald',
+            self::Suspended => 'amber',
+            self::Banned => 'rose',
+        };
+    }
+
+    public function description(): string
+    {
+        return match ($this) {
+            self::Active => 'Full access to the platform.',
+            self::Suspended => 'Temporarily frozen — cannot sign in until reactivated.',
+            self::Banned => 'Permanently blocked from the platform.',
+        };
+    }
 }

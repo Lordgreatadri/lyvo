@@ -126,6 +126,31 @@ return [
         'emergency' => [
             'path' => storage_path('logs/laravel.log'),
         ],
+
+        'frogapi' => [
+            'driver' => 'daily',
+            'days' => 14,
+            'path' => storage_path('logs/frogapi.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+        'twilioapi' => [
+            'driver' => 'daily',
+            'days' => 14,
+            'path' => storage_path('logs/twilioapi.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+        'moolre_smsapi' => [
+            'driver' => 'daily',
+            'days' => 14,
+            'path' => storage_path('logs/moolresmsapi.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
+        'moolre_momoapi' => [
+            'driver' => 'daily',
+            'days' => 14,
+            'path' => storage_path('logs/moolremomoapi.log'),
+            'level' => env('LOG_LEVEL', 'debug'),
+        ],
     ],
 
 ];

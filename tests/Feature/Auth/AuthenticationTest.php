@@ -3,7 +3,6 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
-use App\Providers\RouteServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -20,7 +19,11 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        $user = User::factory()->create();
+        // A fully verified customer lands on their dashboard after login.
+        $user = User::factory()->create([
+            'phone' => '0207654321',
+            'phone_verified_at' => now(),
+        ]);
 
         $response = $this->post('/login', [
             'email' => $user->email,
@@ -28,7 +31,24 @@ class AuthenticationTest extends TestCase
         ]);
 
         $this->assertAuthenticated();
-        $response->assertRedirect(RouteServiceProvider::HOME);
+        $response->assertRedirect(route('customer.dashboard'));
+    }
+
+    public function test_unverified_users_are_sent_to_the_verification_screen(): void
+    {
+        // Email verified but phone not yet — contacts are incomplete.
+        $user = User::factory()->create([
+            'phone' => '0207654322',
+            'phone_verified_at' => null,
+        ]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('verification.notice'));
     }
 
     public function test_users_can_not_authenticate_with_invalid_password(): void
