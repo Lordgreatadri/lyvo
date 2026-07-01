@@ -12,8 +12,8 @@
             ['label' => 'Overview',    'icon' => 'home',     'route' => 'customer.dashboard'],
             ['label' => 'Escrow',      'icon' => 'shield',   'route' => 'escrow.index'],
             ['label' => 'Operators',   'icon' => 'users',    'route' => 'directory.index'],
-            ['label' => 'Saved',       'icon' => 'bookmark', 'route' => 'customer.dashboard'],
-            ['label' => 'Reviews',     'icon' => 'star',     'route' => 'customer.dashboard'],
+            ['label' => 'Addresses',   'icon' => 'home',     'route' => 'customer.addresses.index'],
+            ['label' => 'Payment',     'icon' => 'lock',     'route' => 'customer.payment-methods.index'],
         ],
         'operator' => [
             ['label' => 'Overview',    'icon' => 'home',     'route' => 'operator.dashboard'],
@@ -24,9 +24,9 @@
         ],
         'admin' => [
             ['label' => 'Overview',      'icon' => 'chart',     'route' => 'admin.dashboard'],
-            ['label' => 'Verification',  'icon' => 'badge',     'route' => 'admin.verification'],
+            ['label' => 'Operators',     'icon' => 'badge',     'route' => 'admin.operators.index'],
+            ['label' => 'Verification',  'icon' => 'shield',    'route' => 'admin.verification'],
             ['label' => 'Users',         'icon' => 'users',     'route' => 'admin.dashboard'],
-            ['label' => 'Escrow',        'icon' => 'shield',    'route' => 'admin.dashboard'],
             ['label' => 'Reports',       'icon' => 'flag',      'route' => 'admin.dashboard'],
         ],
     ];
@@ -34,10 +34,15 @@
     $nav = $navByRole[$role] ?? $navByRole['customer'];
 
     $roleMeta = [
-        'customer' => ['name' => 'Nana Adjei',   'sub' => 'Customer',          'avatar' => 'from-sky-500 to-blue-600'],
-        'operator' => ['name' => 'Adwoa Mensah', 'sub' => 'Verified Operator', 'avatar' => 'from-primary-500 to-brand-teal'],
-        'admin'    => ['name' => 'LYVO Admin',   'sub' => 'Administrator',     'avatar' => 'from-ink to-ink-soft'],
+        'customer' => ['name' => 'Customer',          'sub' => 'Customer',          'avatar' => 'from-sky-500 to-blue-600'],
+        'operator' => ['name' => 'Verified Operator', 'sub' => 'Verified Operator', 'avatar' => 'from-primary-500 to-brand-teal'],
+        'admin'    => ['name' => 'LYVO Admin',        'sub' => 'Administrator',     'avatar' => 'from-ink to-ink-soft'],
     ][$role];
+
+    // Prefer the authenticated user's real identity when available.
+    if ($authUser = auth()->user()) {
+        $roleMeta['name'] = $authUser->name;
+    }
 @endphp
 
 <!DOCTYPE html>
@@ -86,9 +91,12 @@
                     <p class="truncate text-sm font-semibold">{{ $roleMeta['name'] }}</p>
                     <p class="truncate text-xs text-ink-muted">{{ $roleMeta['sub'] }}</p>
                 </div>
-                <a href="{{ route('home') }}" class="text-ink-muted transition hover:text-rose-500" title="Exit demo">
-                    <x-icon name="logout" class="h-5 w-5" />
-                </a>
+                <form method="POST" action="{{ route('logout') }}" class="shrink-0">
+                    @csrf
+                    <button type="submit" class="text-ink-muted transition hover:text-rose-500" title="Log out">
+                        <x-icon name="logout" class="h-5 w-5" />
+                    </button>
+                </form>
             </div>
         </div>
     </aside>
@@ -124,7 +132,7 @@
 
             <div class="hidden flex-1 sm:block">
                 <div class="relative max-w-md">
-                    <x-icon name="search" class="pointer-events-none absolute left-3.5 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-ink-muted" />
+                    <x-icon name="search" class="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-muted" />
                     <input type="text" placeholder="Search…" class="form-input pl-10" />
                 </div>
             </div>

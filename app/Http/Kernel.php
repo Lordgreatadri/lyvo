@@ -64,5 +64,15 @@ class Kernel extends HttpKernel
         'signed' => \App\Http\Middleware\ValidateSignature::class,
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
+
+        // LYVO domain middleware
+        'account' => \App\Http\Middleware\EnsureAccountType::class,
+        'operator.approved' => \App\Http\Middleware\EnsureOperatorApproved::class,
+        'verified.contacts' => \App\Http\Middleware\EnsureContactsVerified::class,
+
+        // Spatie permission (ready for the authorization phase)
+        'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
+        'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
+        'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
     ];
 }
