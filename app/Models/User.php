@@ -136,6 +136,41 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasVerifiedEmail() && $this->hasVerifiedPhone();
     }
 
+    /* ----------------------------------------------------------------------
+     | Account status (admin moderation)
+     * --------------------------------------------------------------------*/
+
+    public function isActive(): bool
+    {
+        return $this->status === UserStatus::Active;
+    }
+
+    public function isFrozen(): bool
+    {
+        return $this->status === UserStatus::Suspended;
+    }
+
+    public function isBanned(): bool
+    {
+        return $this->status === UserStatus::Banned;
+    }
+
+    /**
+     * Freeze (suspend) the account, blocking future logins.
+     */
+    public function freeze(): bool
+    {
+        return $this->forceFill(['status' => UserStatus::Suspended])->save();
+    }
+
+    /**
+     * Reactivate a frozen/banned account.
+     */
+    public function unfreeze(): bool
+    {
+        return $this->forceFill(['status' => UserStatus::Active])->save();
+    }
+
     /**
      * Route the user should land on after login, based on account type.
      */

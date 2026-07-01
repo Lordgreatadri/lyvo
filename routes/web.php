@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\OperatorApprovalController;
+use App\Http\Controllers\Admin\RoleController as AdminRoleController;
+use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\OperatorRegistrationController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
 use App\Http\Controllers\Customer\DeliveryAddressController;
@@ -91,6 +93,18 @@ Route::middleware(['auth', 'verified.contacts', 'account:admin'])->group(functio
     Route::patch('/admin/operators/{operator}/review', [OperatorApprovalController::class, 'markInReview'])->name('admin.operators.review');
     Route::patch('/admin/operators/{operator}/approve', [OperatorApprovalController::class, 'approve'])->name('admin.operators.approve');
     Route::patch('/admin/operators/{operator}/reject', [OperatorApprovalController::class, 'reject'])->name('admin.operators.reject');
+
+    // User management
+    Route::get('/admin/users', [AdminUserController::class, 'index'])->name('admin.users.index');
+    Route::get('/admin/users/{user}', [AdminUserController::class, 'show'])->name('admin.users.show');
+    Route::patch('/admin/users/{user}/approve', [AdminUserController::class, 'approve'])->name('admin.users.approve');
+    Route::patch('/admin/users/{user}/freeze', [AdminUserController::class, 'freeze'])->name('admin.users.freeze');
+    Route::patch('/admin/users/{user}/unfreeze', [AdminUserController::class, 'unfreeze'])->name('admin.users.unfreeze');
+    Route::put('/admin/users/{user}/roles', [AdminUserController::class, 'updateRoles'])->name('admin.users.roles');
+
+    // Roles & permissions
+    Route::get('/admin/roles', [AdminRoleController::class, 'index'])->name('admin.roles.index');
+    Route::put('/admin/roles/{role}', [AdminRoleController::class, 'update'])->name('admin.roles.update');
 });
 
 // ---------- Authenticated profile + generic dashboard redirect ----------

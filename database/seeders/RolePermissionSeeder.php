@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\AccountType;
+use App\Support\Permissions;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -11,9 +12,12 @@ use Spatie\Permission\PermissionRegistrar;
 /**
  * RolePermissionSeeder
  * --------------------
- * Seeds the three account-type roles (admin, customer, operator) and a starter
- * set of permissions. Fine-grained authorization is fleshed out in the next
- * phase; this gives every account a role from day one so the gate is ready.
+ * Seeds the platform's roles and permissions from the central catalogue
+ * (App\Support\Permissions). Roles map 1:1 to account types (admin, operator,
+ * customer); guests are unauthenticated and therefore hold no role.
+ *
+ * The seeder is idempotent — re-run it any time new permissions are added to the
+ * catalogue and it creates the missing ones and re-syncs each role's defaults.
  */
 class RolePermissionSeeder extends Seeder
 {
@@ -21,33 +25,17 @@ class RolePermissionSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $permissions = [
-            // Operator verification
-            'operators.verify',
-            'operators.view',
-            // User management
-            'users.manage',
-            // Escrow / disputes (future phases — declared early)
-            'escrow.manage',
-            'disputes.resolve',
-            // Customer self-service
-            'addresses.manage',
-            'payment-methods.manage',
-        ];
-
-        foreach ($permissions as $permission) {
+        // 1. Ensure every catalogued permission exists.
+        foreach (Permissions::all() as $permission) {
             Permission::findOrCreate($permission, 'web');
         }
 
-        $admin = Role::findOrCreate(AccountType::Admin->defaultRole(), 'web');
-        $customer = Role::findOrCreate(AccountType::Customer->defaultRole(), 'web');
-        $operator = Role::findOrCreate(AccountType::Operator->defaultRole(), 'web');
+        // 2. Create each account-type role and sync its default permission set.
+        foreach (AccountType::cases() as $accountType) {
+            $role = Role::findOrCreate($accountType->defaultRole(), 'web');
+            $role->syncPermissions(Permissions::forRole($accountType));
+        }
 
-        // Admin can do everything currently defined.
-        $admin->syncPermissions(Permission::all());
-
-        $customer->syncPermissions(['addresses.manage', 'payment-methods.manage']);
-
-        $operator->syncPermissions(['operators.view']);
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
     }
 }

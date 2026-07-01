@@ -14,6 +14,7 @@
             ['label' => 'Operators',   'icon' => 'users',    'route' => 'directory.index'],
             ['label' => 'Addresses',   'icon' => 'home',     'route' => 'customer.addresses.index'],
             ['label' => 'Payment',     'icon' => 'lock',     'route' => 'customer.payment-methods.index'],
+            ['label' => 'Settings',    'icon' => 'settings', 'route' => 'profile.edit'],
         ],
         'operator' => [
             ['label' => 'Overview',    'icon' => 'home',     'route' => 'operator.dashboard'],
@@ -21,13 +22,15 @@
             ['label' => 'Products',    'icon' => 'box',      'route' => 'operator.dashboard'],
             ['label' => 'Verification','icon' => 'badge',    'route' => 'operator.verification'],
             ['label' => 'Leads',       'icon' => 'inbox',    'route' => 'operator.dashboard'],
+            ['label' => 'Settings',    'icon' => 'settings', 'route' => 'profile.edit'],
         ],
         'admin' => [
             ['label' => 'Overview',      'icon' => 'chart',     'route' => 'admin.dashboard'],
             ['label' => 'Operators',     'icon' => 'badge',     'route' => 'admin.operators.index'],
             ['label' => 'Verification',  'icon' => 'shield',    'route' => 'admin.verification'],
-            ['label' => 'Users',         'icon' => 'users',     'route' => 'admin.dashboard'],
-            ['label' => 'Reports',       'icon' => 'flag',      'route' => 'admin.dashboard'],
+            ['label' => 'Users',         'icon' => 'users',     'route' => 'admin.users.index'],
+            ['label' => 'Roles',         'icon' => 'lock',      'route' => 'admin.roles.index'],
+            ['label' => 'Settings',      'icon' => 'settings',  'route' => 'profile.edit'],
         ],
     ];
 
