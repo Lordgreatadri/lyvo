@@ -1,7 +1,11 @@
 <?php
 
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
+use App\Http\Controllers\Admin\OperatorApprovalController;
+use App\Http\Controllers\Auth\OperatorRegistrationController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
+use App\Http\Controllers\Customer\DeliveryAddressController;
+use App\Http\Controllers\Customer\PaymentMethodController;
 use App\Http\Controllers\DirectoryController;
 use App\Http\Controllers\EscrowController;
 use App\Http\Controllers\HomeController;
@@ -14,10 +18,11 @@ use Illuminate\Support\Facades\Route;
 | Web Routes
 |--------------------------------------------------------------------------
 |
-| Phase 1 — Architectural prototype. These routes wire the full LYVO user
-| journey to demo to the client. Screens use placeholder data via
-| App\Support\DemoData and resolve records by UUID (never auto-increment PK)
-| to mirror the security model that will be enforced once the DB lands.
+| Authentication phase. Public marketing/discovery routes remain open; the
+| customer, operator and admin workspaces are now gated by real auth, contact
+| verification (email + phone via OTP) and account type. Operators additionally
+| require admin approval before their dashboard unlocks. Records are resolved by
+| uuid, never the auto-increment primary key.
 |
 */
 
@@ -35,28 +40,63 @@ Route::get('/guest', function () {
     return redirect()->route('directory.index');
 })->name('guest.enter');
 
-// Operator onboarding wizard
-Route::get('/become-an-operator', [OperatorDashboardController::class, 'register'])->name('register.operator');
+// Operator onboarding wizard (public; creates a pending operator account)
+Route::middleware('guest')->group(function () {
+    Route::get('/become-an-operator', [OperatorRegistrationController::class, 'create'])->name('register.operator');
+    Route::post('/become-an-operator', [OperatorRegistrationController::class, 'store'])->name('register.operator.store');
+});
 
 // ---------- Escrow (demo: open for walkthrough) ----------
 Route::get('/escrow', [EscrowController::class, 'index'])->name('escrow.index');
 Route::get('/escrow/{transaction}', [EscrowController::class, 'show'])->name('escrow.show');
 
 // ---------- Customer workspace ----------
-Route::get('/customer', [CustomerDashboardController::class, 'index'])->name('customer.dashboard');
+Route::middleware(['auth', 'verified.contacts', 'account:customer'])->group(function () {
+    Route::get('/customer', [CustomerDashboardController::class, 'index'])->name('customer.dashboard');
+
+    // Delivery address book (max 3, one default)
+    Route::get('/customer/addresses', [DeliveryAddressController::class, 'index'])->name('customer.addresses.index');
+    Route::post('/customer/addresses', [DeliveryAddressController::class, 'store'])->name('customer.addresses.store');
+    Route::put('/customer/addresses/{address}', [DeliveryAddressController::class, 'update'])->name('customer.addresses.update');
+    Route::patch('/customer/addresses/{address}/default', [DeliveryAddressController::class, 'setDefault'])->name('customer.addresses.default');
+    Route::delete('/customer/addresses/{address}', [DeliveryAddressController::class, 'destroy'])->name('customer.addresses.destroy');
+
+    // Saved payment methods
+    Route::get('/customer/payment-methods', [PaymentMethodController::class, 'index'])->name('customer.payment-methods.index');
+    Route::post('/customer/payment-methods', [PaymentMethodController::class, 'store'])->name('customer.payment-methods.store');
+    Route::patch('/customer/payment-methods/{paymentMethod}/default', [PaymentMethodController::class, 'setDefault'])->name('customer.payment-methods.default');
+    Route::delete('/customer/payment-methods/{paymentMethod}', [PaymentMethodController::class, 'destroy'])->name('customer.payment-methods.destroy');
+});
 
 // ---------- Operator workspace ----------
-Route::get('/operator', [OperatorDashboardController::class, 'index'])->name('operator.dashboard');
-Route::get('/operator/verification', [OperatorDashboardController::class, 'verification'])->name('operator.verification');
+Route::middleware(['auth', 'verified.contacts', 'account:operator'])->group(function () {
+    // Status page shown while awaiting (or after a rejected) admin review.
+    Route::get('/operator/pending', [OperatorDashboardController::class, 'pending'])->name('operator.pending');
+
+    // Dashboard unlocks only once approved.
+    Route::middleware('operator.approved')->group(function () {
+        Route::get('/operator', [OperatorDashboardController::class, 'index'])->name('operator.dashboard');
+        Route::get('/operator/verification', [OperatorDashboardController::class, 'verification'])->name('operator.verification');
+    });
+});
 
 // ---------- Admin workspace ----------
-Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
-Route::get('/admin/verification', [AdminDashboardController::class, 'verification'])->name('admin.verification');
+Route::middleware(['auth', 'verified.contacts', 'account:admin'])->group(function () {
+    Route::get('/admin', [AdminDashboardController::class, 'index'])->name('admin.dashboard');
+    Route::get('/admin/verification', [AdminDashboardController::class, 'verification'])->name('admin.verification');
 
-// ---------- Authenticated profile (Breeze) ----------
-Route::get('/dashboard', [CustomerDashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+    // Operator verification center
+    Route::get('/admin/operators', [OperatorApprovalController::class, 'index'])->name('admin.operators.index');
+    Route::get('/admin/operators/{operator}', [OperatorApprovalController::class, 'show'])->name('admin.operators.show');
+    Route::patch('/admin/operators/{operator}/review', [OperatorApprovalController::class, 'markInReview'])->name('admin.operators.review');
+    Route::patch('/admin/operators/{operator}/approve', [OperatorApprovalController::class, 'approve'])->name('admin.operators.approve');
+    Route::patch('/admin/operators/{operator}/reject', [OperatorApprovalController::class, 'reject'])->name('admin.operators.reject');
+});
+
+// ---------- Authenticated profile + generic dashboard redirect ----------
+Route::get('/dashboard', function () {
+    return redirect()->route(auth()->user()->homeRoute());
+})->middleware(['auth', 'verified.contacts'])->name('dashboard');
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

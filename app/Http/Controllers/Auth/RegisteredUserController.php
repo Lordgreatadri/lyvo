@@ -2,21 +2,32 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\AccountType;
+use App\Enums\OtpChannel;
+use App\Enums\OtpPurpose;
+use App\Enums\UserStatus;
+use App\Http\Controllers\Concerns\RedirectsUsers;
 use App\Http\Controllers\Controller;
+use App\Http\Requests\Auth\CustomerRegistrationRequest;
+use App\Models\CustomerProfile;
 use App\Models\User;
-use App\Providers\RouteServiceProvider;
+use App\Services\OtpService;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\RedirectResponse;
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Validation\Rules;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class RegisteredUserController extends Controller
 {
+    use RedirectsUsers;
+
+    public function __construct(private readonly OtpService $otp)
+    {
+    }
+
     /**
-     * Display the registration view.
+     * Display the customer registration view.
      */
     public function create(): View
     {
@@ -24,28 +35,38 @@ class RegisteredUserController extends Controller
     }
 
     /**
-     * Handle an incoming registration request.
+     * Handle a customer registration request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * Creates the user (account_type = customer), its customer profile, assigns
+     * the customer role, then issues email + phone OTP codes for verification.
      */
-    public function store(Request $request): RedirectResponse
+    public function store(CustomerRegistrationRequest $request): RedirectResponse
     {
-        $request->validate([
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
-        ]);
+        $user = DB::transaction(function () use ($request): User {
+            $user = User::create([
+                'account_type' => AccountType::Customer,
+                'status' => UserStatus::Active,
+                'name' => $request->validated('name'),
+                'email' => $request->validated('email'),
+                'phone' => $request->validated('phone'),
+                'password' => $request->validated('password'),
+            ]);
 
-        $user = User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-        ]);
+            CustomerProfile::create(['user_id' => $user->id]);
+
+            $user->assignRole(AccountType::Customer->defaultRole());
+
+            return $user;
+        });
 
         event(new Registered($user));
 
+        // Issue verification codes (logged locally; SMS later).
+        $this->otp->send($user, OtpChannel::Email, OtpPurpose::EmailVerification);
+        $this->otp->send($user, OtpChannel::Sms, OtpPurpose::PhoneVerification);
+
         Auth::login($user);
 
-        return redirect(RouteServiceProvider::HOME);
+        return $this->redirectAfterAuth($user);
     }
 }

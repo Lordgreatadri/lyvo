@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Operator;
 
 use App\Http\Controllers\Controller;
 use App\Support\DemoData;
+use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class DashboardController extends Controller
@@ -25,10 +26,14 @@ class DashboardController extends Controller
     }
 
     /**
-     * Operator onboarding wizard (business info, Ghana Card, video, status).
+     * Verification status page shown while an operator awaits (or has been
+     * declined) admin approval. The operator dashboard stays locked until the
+     * profile's verification_status is Approved.
      */
-    public function register(): View
+    public function pending(Request $request): View
     {
-        return view('operator.register');
+        return view('operator.pending', [
+            'profile' => $request->user()->operatorProfile,
+        ]);
     }
 }

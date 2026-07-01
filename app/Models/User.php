@@ -2,15 +2,31 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\AccountType;
+use App\Enums\UserStatus;
+use Dyrynda\Database\Support\BindsOnUuid;
+use Dyrynda\Database\Support\GeneratesUuid;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable
+/**
+ * User
+ * ----
+ * Single authentication identity for every actor on LYVO. The `account_type`
+ * column (admin | customer | operator) decides which dashboard the user is
+ * routed to and which Spatie role they carry. Type-specific data lives in the
+ * related profile (customerProfile / operatorProfile) to keep this table lean.
+ */
+class User extends Authenticatable implements MustVerifyEmail
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use BindsOnUuid, GeneratesUuid, HasApiTokens, HasFactory, HasRoles, Notifiable, SoftDeletes;
 
     /**
      * The attributes that are mass assignable.
@@ -18,9 +34,15 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'account_type',
+        'status',
         'name',
         'email',
+        'phone',
         'password',
+        'email_verified_at',
+        'phone_verified_at',
+        'last_login_at',
     ];
 
     /**
@@ -39,7 +61,86 @@ class User extends Authenticatable
      * @var array<string, string>
      */
     protected $casts = [
+        'uuid' => 'string',
+        'account_type' => AccountType::class,
+        'status' => UserStatus::class,
         'email_verified_at' => 'datetime',
+        'phone_verified_at' => 'datetime',
+        'last_login_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    /* ----------------------------------------------------------------------
+     | Relationships
+     * --------------------------------------------------------------------*/
+
+    public function customerProfile(): HasOne
+    {
+        return $this->hasOne(CustomerProfile::class);
+    }
+
+    public function operatorProfile(): HasOne
+    {
+        return $this->hasOne(OperatorProfile::class);
+    }
+
+    public function deliveryAddresses(): HasMany
+    {
+        return $this->hasMany(DeliveryAddress::class);
+    }
+
+    public function paymentMethods(): HasMany
+    {
+        return $this->hasMany(PaymentMethod::class);
+    }
+
+    public function verificationCodes(): HasMany
+    {
+        return $this->hasMany(VerificationCode::class);
+    }
+
+    /* ----------------------------------------------------------------------
+     | Type & status helpers
+     * --------------------------------------------------------------------*/
+
+    public function isAdmin(): bool
+    {
+        return $this->account_type === AccountType::Admin;
+    }
+
+    public function isCustomer(): bool
+    {
+        return $this->account_type === AccountType::Customer;
+    }
+
+    public function isOperator(): bool
+    {
+        return $this->account_type === AccountType::Operator;
+    }
+
+    public function hasVerifiedPhone(): bool
+    {
+        return ! is_null($this->phone_verified_at);
+    }
+
+    public function markPhoneAsVerified(): bool
+    {
+        return $this->forceFill(['phone_verified_at' => $this->freshTimestamp()])->save();
+    }
+
+    /**
+     * Whether this user has completed both contact verifications.
+     */
+    public function isFullyVerified(): bool
+    {
+        return $this->hasVerifiedEmail() && $this->hasVerifiedPhone();
+    }
+
+    /**
+     * Route the user should land on after login, based on account type.
+     */
+    public function homeRoute(): string
+    {
+        return $this->account_type->homeRoute();
+    }
 }
