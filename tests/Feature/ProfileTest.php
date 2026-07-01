@@ -61,6 +61,31 @@ class ProfileTest extends TestCase
         $this->assertNotNull($user->refresh()->email_verified_at);
     }
 
+    public function test_changing_the_phone_number_resets_phone_verification(): void
+    {
+        $user = User::factory()->create([
+            'phone' => '0201112222',
+            'phone_verified_at' => now(),
+        ]);
+
+        $response = $this
+            ->actingAs($user)
+            ->patch('/profile', [
+                'name' => $user->name,
+                'email' => $user->email,
+                'phone' => '0209998888',
+            ]);
+
+        $response
+            ->assertSessionHasNoErrors()
+            ->assertRedirect('/profile');
+
+        $user->refresh();
+
+        $this->assertSame('0209998888', $user->phone);
+        $this->assertNull($user->phone_verified_at);
+    }
+
     public function test_user_can_delete_their_account(): void
     {
         $user = User::factory()->create();
@@ -76,7 +101,7 @@ class ProfileTest extends TestCase
             ->assertRedirect('/');
 
         $this->assertGuest();
-        $this->assertNull($user->fresh());
+        $this->assertSoftDeleted($user);
     }
 
     public function test_correct_password_must_be_provided_to_delete_account(): void

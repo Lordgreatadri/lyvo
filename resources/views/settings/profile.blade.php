@@ -1,4 +1,4 @@
-<x-layouts.dashboard :role="$role" title="Profile &amp; Settings" heading="Profile &amp; Settings" subheading="Manage your personal information, contact details and password.">
+<x-layouts.dashboard :role="$role" title="Profile & Settings" heading="Profile & Settings" subheading="Manage your personal information, contact details and password.">
 
     @php
         $flash = session('status');

@@ -23,14 +23,33 @@ class AuthServiceProvider extends ServiceProvider
     ];
 
     /**
+     * Policy abilities that carry their own guard-rails (e.g. an admin may not
+     * suspend / re-role / delete their own account). The super-admin gate defers
+     * to these policies instead of blanket-allowing, so the guards still apply.
+     *
+     * @var array<int, string>
+     */
+    private const SELF_GUARDED_ABILITIES = ['suspend', 'assignRoles', 'delete'];
+
+    /**
      * Register any authentication / authorization services.
      */
     public function boot(): void
     {
-        // Super-admin: the admin role bypasses every gate/permission check so new
-        // capabilities are available to admins the moment they are introduced.
+        // Super-admin: the admin role bypasses gate/permission checks so new
+        // capabilities are available to admins the moment they are introduced —
+        // except self-guarded policy abilities, which fall through to the policy
+        // so an admin can never act destructively on their own account.
         Gate::before(function (User $user, string $ability) {
-            return $user->hasRole(AccountType::Admin->defaultRole()) ? true : null;
+            if (! $user->hasRole(AccountType::Admin->defaultRole())) {
+                return null;
+            }
+
+            if (in_array($ability, self::SELF_GUARDED_ABILITIES, true)) {
+                return null;
+            }
+
+            return true;
         });
     }
 }

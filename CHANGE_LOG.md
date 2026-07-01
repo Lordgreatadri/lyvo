@@ -60,6 +60,23 @@ All notable changes to the LYVO platform are documented here. Dates use `YYYY-MM
   Spatie role.
 - Re-seed permissions after changes: `php artisan db:seed --class=RolePermissionSeeder`.
 
+### Fixed (PR review)
+- **Super-admin gate no longer defeats self-guards** — `Gate::before` now defers the
+  self-guarded policy abilities (`suspend`, `assignRoles`, `delete`) to the policy, so
+  an admin still cannot freeze / re-role / delete their own account.
+- **Status vs. reactivation mismatch** — `User::unfreeze()` only reactivates a *frozen*
+  (suspended) account and leaves *banned* accounts untouched; added `ban()` / `unban()`
+  so the "permanently blocked" description holds true.
+- **PATCH profile semantics** — `ProfileUpdateRequest` uses `sometimes` so partial
+  updates (e.g. name + email only) are still valid; contacts are validated only when
+  present.
+- **Permission constants** — `OperatorApprovalController` authorizes via
+  `Support\Permissions::VERIFICATION_*` constants instead of raw strings.
+- **UI copy** — fixed double-escaped "&amp;" in the Profile and Roles page headings.
+- **Tests** — added `Admin\UserManagementTest` and `Admin\RolePermissionTest` covering
+  access control, freeze/unfreeze, role assignment, operator approval and the self-guard
+  rails; `UserFactory` now seeds `account_type` + `status`.
+
 ---
 
 ## [Unreleased] — Authentication

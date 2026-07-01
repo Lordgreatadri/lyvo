@@ -1,4 +1,4 @@
-<x-layouts.dashboard role="admin" title="Roles &amp; Permissions" heading="Roles &amp; Permissions" subheading="Control what each role can do. Assign roles to users from their profile.">
+<x-layouts.dashboard role="admin" title="Roles & Permissions" heading="Roles & Permissions" subheading="Control what each role can do. Assign roles to users from their profile.">
 
     @if (session('status'))
         <div class="mb-4 rounded-2xl bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">{{ session('status') }}</div>

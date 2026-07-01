@@ -156,7 +156,8 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Freeze (suspend) the account, blocking future logins.
+     * Freeze (suspend) the account, blocking future logins. A frozen account can
+     * be reactivated; use ban() for a permanent block.
      */
     public function freeze(): bool
     {
@@ -164,10 +165,35 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Reactivate a frozen/banned account.
+     * Reactivate a frozen account. Banned accounts are intentionally left
+     * untouched — lift a ban with unban() instead.
      */
     public function unfreeze(): bool
     {
+        if (! $this->isFrozen()) {
+            return false;
+        }
+
+        return $this->forceFill(['status' => UserStatus::Active])->save();
+    }
+
+    /**
+     * Permanently block the account (stronger than a freeze).
+     */
+    public function ban(): bool
+    {
+        return $this->forceFill(['status' => UserStatus::Banned])->save();
+    }
+
+    /**
+     * Lift a ban, returning the account to active.
+     */
+    public function unban(): bool
+    {
+        if (! $this->isBanned()) {
+            return false;
+        }
+
         return $this->forceFill(['status' => UserStatus::Active])->save();
     }
 

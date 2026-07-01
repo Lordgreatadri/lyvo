@@ -6,6 +6,7 @@ use App\Enums\OperatorVerificationStatus;
 use App\Http\Controllers\Controller;
 use App\Models\OperatorProfile;
 use App\Services\OperatorReviewService;
+use App\Support\Permissions;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -45,7 +46,7 @@ class OperatorApprovalController extends Controller
 
     public function markInReview(Request $request, OperatorProfile $operator): RedirectResponse
     {
-        $this->authorize('verification.review');
+        $this->authorize(Permissions::VERIFICATION_REVIEW);
 
         $this->review->markInReview($operator, $request->user());
 
@@ -54,7 +55,7 @@ class OperatorApprovalController extends Controller
 
     public function approve(Request $request, OperatorProfile $operator): RedirectResponse
     {
-        $this->authorize('verification.approve');
+        $this->authorize(Permissions::VERIFICATION_APPROVE);
 
         $this->review->approve($operator, $request->user());
 
@@ -63,7 +64,7 @@ class OperatorApprovalController extends Controller
 
     public function reject(Request $request, OperatorProfile $operator): RedirectResponse
     {
-        $this->authorize('verification.reject');
+        $this->authorize(Permissions::VERIFICATION_REJECT);
 
         $validated = $request->validate(['rejection_reason' => ['required', 'string', 'max:1000']]);
 
