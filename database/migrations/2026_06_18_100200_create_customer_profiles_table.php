@@ -22,7 +22,7 @@ return new class extends Migration
 
             $table->string('preferred_name')->nullable();
             $table->date('date_of_birth')->nullable();
-            $table->string('marketing_opt_in')->default('0');
+            $table->boolean('marketing_opt_in')->default(false);
             $table->timestamps();
 
             $table->unique('user_id');

@@ -64,15 +64,18 @@ class OtpVerificationController extends Controller
      */
     public function verify(Request $request, string $channel): RedirectResponse
     {
-        $request->validate(['code' => ['required', 'string']]);
+        [$otpChannel, $purpose] = $this->resolve($channel);
+
+        // Scope validation/verification errors to a per-channel bag so a failure on
+        // one channel never surfaces under the other channel's form.
+        $request->validateWithBag($channel, ['code' => ['required', 'string']]);
 
         $user = $request->user();
-        [$otpChannel, $purpose] = $this->resolve($channel);
 
         if (! $this->otp->verify($user, $otpChannel, $purpose, $request->input('code'))) {
             return back()->withErrors([
                 'code' => 'That code is invalid or has expired. Please try again.',
-            ]);
+            ], $channel);
         }
 
         if ($otpChannel === OtpChannel::Email) {

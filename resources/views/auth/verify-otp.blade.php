@@ -35,7 +35,7 @@
                     <label for="email_code" class="form-label">Enter email code</label>
                     <input id="email_code" name="code" inputmode="numeric" autocomplete="one-time-code"
                            class="form-input tracking-[0.3em]" placeholder="••••••" />
-                    <x-input-error :messages="$errors->get('code')" class="mt-2" />
+                    <x-input-error :messages="$errors->getBag('email')->get('code')" class="mt-2" />
                 </div>
                 <button type="submit" class="btn-primary">Verify</button>
             </form>
@@ -67,7 +67,7 @@
                     <label for="phone_code" class="form-label">Enter phone code</label>
                     <input id="phone_code" name="code" inputmode="numeric" autocomplete="one-time-code"
                            class="form-input tracking-[0.3em]" placeholder="••••••" />
-                    <x-input-error :messages="$errors->get('code')" class="mt-2" />
+                    <x-input-error :messages="$errors->getBag('phone')->get('code')" class="mt-2" />
                 </div>
                 <button type="submit" class="btn-primary">Verify</button>
             </form>
