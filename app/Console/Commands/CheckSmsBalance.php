@@ -21,7 +21,7 @@ use Src\Domain\Sms\SmsService;
  */
 class CheckSmsBalance extends Command
 {
-    protected $signature = 'sms:check-balance {--force : Ignore the alert throttle}';
+    protected $signature = 'sms:check-balance {--force : Bypass the balance cache and the alert throttle}';
 
     protected $description = 'Check the SMS credit balance and alert admins when it is low';
 
@@ -32,7 +32,10 @@ class CheckSmsBalance extends Command
     {
         $settings = SmsSetting::current();
 
-        $balance = $sms->balance(force: true)['balance'];
+        $force = (bool) $this->option('force');
+
+        // Honour the cache on the scheduled hourly run; --force fetches live.
+        $balance = $sms->balance(force: $force)['balance'];
         $threshold = $settings->low_credit_threshold;
 
         $this->info("SMS balance: {$balance} (threshold: {$threshold}).");
@@ -41,7 +44,7 @@ class CheckSmsBalance extends Command
             return self::SUCCESS;
         }
 
-        if (! $this->option('force') && ! $this->shouldAlert($settings)) {
+        if (! $force && ! $this->shouldAlert($settings)) {
             $this->comment('Below threshold, but an alert was sent recently — skipping.');
 
             return self::SUCCESS;

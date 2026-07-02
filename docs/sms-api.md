@@ -104,7 +104,7 @@ Route group `admin.sms.*` (auth + verified contacts + `account:admin`), view
 | ---------------------- | ------ | --------------------------------------------------- |
 | `admin.sms.index`      | GET    | Balance, status breakdown, settings, message log    |
 | `admin.sms.settings`   | PUT    | Update provider / sender ID / low-credit threshold  |
-| `admin.sms.balance`    | POST   | Force a fresh balance lookup                         |
+| `admin.sms.balance`    | POST   | Force a fresh balance lookup (requires `sms.manage`) |
 | `admin.sms.test`       | POST   | Send a test message (`context = admin-test`)         |
 
 Permissions (in `App\Support\Permissions`, group **Messaging (SMS)**):
@@ -141,9 +141,10 @@ Moolre posts delivery receipts to **`POST /api/webhooks/moolre/sms`**.
 
 - `SmsSetting` stores a configurable `low_credit_threshold` (seeded from
   `config('sms.low_credit_threshold')`) and caches the last known balance.
-- `php artisan sms:check-balance` (add `--force` to bypass the cache) fetches the balance,
-  compares it to the threshold, and notifies every admin via `LowSmsCreditNotification`
-  when it is below. Alerts are throttled to once per 6 hours (`low_credit_alerted_at`).
+- `php artisan sms:check-balance` fetches the balance (using the cache), compares it to
+  the threshold, and notifies every admin via `LowSmsCreditNotification` when it is below.
+  Add `--force` to bypass both the balance cache and the once-per-6h alert throttle.
+  Alerts are otherwise throttled via `low_credit_alerted_at`.
 - Scheduled **hourly** in `App\Console\Kernel`.
 
 ## 8. Configuration

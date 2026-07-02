@@ -70,7 +70,7 @@ final class LogSmsProvider implements SmsProviderInterface
     {
         return [[
             'id' => 1,
-            'senderid' => config('sms.sender_id', 'LYVO'),
+            'senderid' => config('sms.sender_id', 'LyvoEccom'),
             'approval' => 'Approved',
             'whitelisted' => true,
         ]];

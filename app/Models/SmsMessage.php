@@ -3,8 +3,7 @@
 namespace App\Models;
 
 use App\Enums\SmsStatus;
-use App\Models\SmsMessage;
-use App\Models\User;
+// use App\Models\User;
 use Dyrynda\Database\Support\BindsOnUuid;
 use Dyrynda\Database\Support\GeneratesUuid;
 use Illuminate\Database\Eloquent\Builder;

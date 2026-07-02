@@ -77,7 +77,7 @@ All notable changes to the LYVO platform are documented here. Dates use `YYYY-MM
   `MOOLRE_WEBHOOK_SECRET`, so tests never reach the live gateway. Any future external
   API needs the same override (no `.env.testing` exists — `.env` leaks into tests).
 - Query builder does **not** cast enums — `applyStatus()` persists `$status->value`.
-- Full docs: [DevDocs/sms-api.md](DevDocs/sms-api.md).
+- Full docs: [docs/sms-api.md](docs/sms-api.md).
 
 ### Tests
 - `Sms\SmsEncodingTest`, `Sms\MoolreSmsProviderTest` (Guzzle mock), `Sms\SmsServiceTest`,

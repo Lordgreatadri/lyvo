@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\SmsSetting;
 use Dyrynda\Database\Support\BindsOnUuid;
 use Dyrynda\Database\Support\GeneratesUuid;
 use Illuminate\Database\Eloquent\Model;

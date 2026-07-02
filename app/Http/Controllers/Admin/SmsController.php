@@ -70,7 +70,19 @@ class SmsController extends Controller
     {
         $settings = SmsSetting::current();
 
-        $settings->update($request->validated());
+        $data = $request->validated();
+
+        // Switching providers invalidates any balance cached from the previous
+        // gateway. Clear it so the console never shows the old provider's balance
+        // (and belowThreshold cannot misfire) until the next live lookup.
+        if (array_key_exists('provider', $data) && $data['provider'] !== $settings->provider) {
+            $data['cached_balance'] = null;
+            $data['cached_balance_snapshot'] = null;
+            $data['balance_checked_at'] = null;
+            $data['low_credit_alerted_at'] = null;
+        }
+
+        $settings->update($data);
         SmsSetting::flushCache();
 
         return back()->with('status', 'SMS settings updated.');
@@ -78,7 +90,9 @@ class SmsController extends Controller
 
     public function refreshBalance(SmsService $sms): RedirectResponse
     {
-        $this->authorize(Permissions::SMS_VIEW);
+        // Refreshing hits the provider and rewrites the cached balance, so it is
+        // a management action rather than a read-only view.
+        $this->authorize(Permissions::SMS_MANAGE);
 
         $balance = $sms->balance(force: true);
 
