@@ -119,7 +119,10 @@ class OtpService
     }
 
     /**
-     * Deliver the plaintext code. Local/dev = log; email also sent via mail.
+     * Deliver the plaintext code. Email goes via the mail channel; SMS via the
+     * central SmsService (send_sms) so the gateway is swappable in one place.
+     * When code logging is enabled (local/dev) the code is also written to the
+     * log for convenience.
      */
     protected function deliver(User $user, OtpChannel $channel, string $destination, string $code): void
     {
@@ -134,8 +137,23 @@ class OtpService
 
         if ($channel === OtpChannel::Email) {
             $user->notify(new OtpNotification($code, $channel));
+
+            return;
         }
 
-        // SMS delivery is integrated later — for now the logged code above is used.
+        if ($channel === OtpChannel::Sms) {
+            send_sms($destination, $this->smsBody($code), 'otp', $user->id);
+        }
+    }
+
+    /**
+     * Build the SMS body for an OTP. Kept plain GSM-7 (no emoji) so it always
+     * fits in a single billable segment.
+     */
+    protected function smsBody(string $code): string
+    {
+        $minutes = (int) config('lyvo.otp.expiry_minutes', 10);
+
+        return "Your LYVO verification code is {$code}. It expires in {$minutes} minutes. Do not share it.";
     }
 }

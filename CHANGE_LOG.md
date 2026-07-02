@@ -4,6 +4,88 @@ All notable changes to the LYVO platform are documented here. Dates use `YYYY-MM
 
 ---
 
+## [Unreleased] — SMS Gateway (Moolre)
+
+> A scalable, provider-agnostic SMS layer living under `src/Domain/Sms`. Every SMS in
+> the application is sent through one reusable `send_sms()` helper, backed by a swappable
+> provider (Moolre in production, a network-free `log` driver in dev/test). Admins can
+> configure the sender ID, watch the account balance, set a low-credit threshold that
+> auto-alerts them, browse approved sender IDs, and send test messages. Delivery receipts
+> arrive via a signed Spatie webhook and reconcile each message's status by reference.
+> The integration is fully isolated/decoupled so new gateways drop in without touching
+> call sites.
+
+### Added
+
+**SMS domain (`src/Domain/Sms`, PSR-4 `Src\`)**
+- `Contracts\SmsProviderInterface` — provider contract: `name/send/sendBatch/statuses/
+  balance/senderIds`.
+- `Providers\MoolreSmsProvider` — live Guzzle client, `X-API-VASKEY` auth (per-request
+  header), maps Moolre payloads (send `type:1`; status `type:5`; balance `type:2`;
+  sender IDs `type:7`).
+- `Providers\LogSmsProvider` — network-free driver used in local/testing so no real
+  messages are sent or charged.
+- `SmsService` — the application entry point: normalises the recipient, persists an
+  `SmsMessage`, delegates to the active provider, records the outcome, and exposes
+  `reconcileStatuses/applyStatus`, cached `balance()` and `senderIds()`.
+- `DTOs\SmsMessageDto`, `DTOs\SmsResult`, `Support\SmsEncoding` (GSM-7 160/153 vs
+  UCS-2 70/67 segment maths), `helpers.php` (`send_sms()`, `sms()`,
+  `format_phone_for_sms()` → `+233…`).
+
+**Models / migrations**
+- `SmsMessage` — one row per outbound message (ref, provider, recipient, status,
+  encoding, segments, timestamps) with `[status, created_at]` + context/recipient/user
+  indexes.
+- `SmsSetting` — single-row config cache (provider, sender ID, low-credit threshold,
+  cached balance + snapshot, alert throttle).
+
+**Admin console**
+- `Admin\SmsController` + `admin/sms/index` view — balance card + refresh, status
+  breakdown, settings form (provider / sender ID / threshold), approved sender-ID list,
+  test-send form and a paginated, filterable message log.
+- Routes `admin.sms.{index,settings,balance,test}`; permissions `sms.view`,
+  `sms.manage`, `sms.send` (new **Messaging (SMS)** group in `Support\Permissions`);
+  **SMS** nav entry for admins.
+
+**Webhooks & alerts**
+- Spatie webhook-client `moolre` config → `Jobs\ProcessMoolreSmsWebhookJob` reconciles
+  delivery receipts by reference; `Support\Webhooks\MoolreSignatureValidator` verifies
+  the shared secret (constant-time), skipping only when no secret is configured.
+- `Console\Commands\CheckSmsBalance` (`sms:check-balance`, scheduled hourly) alerts
+  admins via `LowSmsCreditNotification` when the balance drops below the threshold,
+  throttled to once per 6h.
+
+**Config**
+- `config/sms.php` — default driver, sender ID, country code (233), low-credit
+  threshold, balance/sender-ID cache TTLs and the `moolre` / `log` provider blocks.
+
+### Changed
+- `Services\OtpService` — the SMS channel now sends through `send_sms()` instead of
+  logging only.
+- `App\Providers\SmsServiceProvider` (deferred) — binds the active provider from
+  `SmsSetting::current()->provider` (falling back to `config('sms.default')`).
+- Webhook routing centralised: all inbound gateway callbacks live in `routes/webhook.php`
+  (loaded under the `api/webhooks` prefix, `api` middleware) — Moolre posts to
+  `/api/webhooks/moolre/sms`. Removed the stock empty `default` webhook-client config.
+- `Console\Kernel` — schedules `sms:check-balance` hourly.
+
+### Notes
+- Provider is swappable at runtime via the SMS settings; add a new gateway by
+  implementing `SmsProviderInterface`, registering a `config/sms.php` block and a
+  webhook config — no call sites change.
+- **Test isolation:** `phpunit.xml` forces `SMS_PROVIDER=log` and blank
+  `MOOLRE_WEBHOOK_SECRET`, so tests never reach the live gateway. Any future external
+  API needs the same override (no `.env.testing` exists — `.env` leaks into tests).
+- Query builder does **not** cast enums — `applyStatus()` persists `$status->value`.
+- Full docs: [DevDocs/sms-api.md](DevDocs/sms-api.md).
+
+### Tests
+- `Sms\SmsEncodingTest`, `Sms\MoolreSmsProviderTest` (Guzzle mock), `Sms\SmsServiceTest`,
+  `Sms\OtpSmsDeliveryTest`, `Sms\MoolreWebhookTest`, `Sms\CheckSmsBalanceCommandTest`,
+  `Admin\SmsManagementTest` — 29 tests; full suite 67 passing.
+
+---
+
 ## [Unreleased] — Authorization (RBAC)
 
 > Role-based access control built on **spatie/laravel-permission**. Roles map 1:1 to

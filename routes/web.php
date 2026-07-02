@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\OperatorApprovalController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
+use App\Http\Controllers\Admin\SmsController as AdminSmsController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Auth\OperatorRegistrationController;
 use App\Http\Controllers\Customer\DashboardController as CustomerDashboardController;
@@ -105,6 +106,12 @@ Route::middleware(['auth', 'verified.contacts', 'account:admin'])->group(functio
     // Roles & permissions
     Route::get('/admin/roles', [AdminRoleController::class, 'index'])->name('admin.roles.index');
     Route::put('/admin/roles/{role}', [AdminRoleController::class, 'update'])->name('admin.roles.update');
+
+    // SMS gateway console
+    Route::get('/admin/sms', [AdminSmsController::class, 'index'])->name('admin.sms.index');
+    Route::put('/admin/sms/settings', [AdminSmsController::class, 'updateSettings'])->name('admin.sms.settings');
+    Route::post('/admin/sms/balance', [AdminSmsController::class, 'refreshBalance'])->name('admin.sms.balance');
+    Route::post('/admin/sms/test', [AdminSmsController::class, 'sendTest'])->name('admin.sms.test');
 });
 
 // ---------- Authenticated profile + generic dashboard redirect ----------

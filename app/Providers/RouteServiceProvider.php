@@ -33,6 +33,14 @@ class RouteServiceProvider extends ServiceProvider
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
 
+            // Inbound webhooks from external gateways (Moolre, payment providers, …).
+            // Kept stateless (no CSRF/session) and centralised in routes/webhook.php.
+            // Public path stays under /api/webhooks/* so existing provider callback
+            // URLs remain stable.
+            Route::middleware('api')
+                ->prefix('api/webhooks')
+                ->group(base_path('routes/webhook.php'));
+
             Route::middleware('web')
                 ->group(base_path('routes/web.php'));
         });
