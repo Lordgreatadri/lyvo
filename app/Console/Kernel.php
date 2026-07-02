@@ -12,7 +12,8 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // $schedule->command('inspire')->hourly();
+        // Monitor SMS credit and alert admins when it runs low.
+        $schedule->command('sms:check-balance')->hourly();
     }
 
     /**

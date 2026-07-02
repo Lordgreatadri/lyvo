@@ -29,6 +29,12 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
         <env name="SESSION_DRIVER" value="array"/>
+        <!-- Force the network-free "log" SMS driver so tests never call a real
+             gateway (Moolre) or incur SMS charges. -->
+        <env name="SMS_PROVIDER" value="log"/>
+        <!-- No webhook secret in tests so simulated Moolre callbacks are accepted
+             without a signature header. Production sets MOOLRE_WEBHOOK_SECRET. -->
+        <env name="MOOLRE_WEBHOOK_SECRET" value=""/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>
 </phpunit>

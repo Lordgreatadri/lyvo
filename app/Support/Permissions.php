@@ -58,6 +58,11 @@ class Permissions
     // ---- Directory ----------------------------------------------------------
     public const DIRECTORY_VIEW = 'directory.view';
 
+    // ---- Messaging (SMS) ----------------------------------------------------
+    public const SMS_VIEW = 'sms.view';
+    public const SMS_MANAGE = 'sms.manage';
+    public const SMS_SEND = 'sms.send';
+
     // ---- Customer self-service ---------------------------------------------
     public const ADDRESSES_MANAGE = 'addresses.manage';
     public const PAYMENT_METHODS_MANAGE = 'payment-methods.manage';
@@ -111,6 +116,11 @@ class Permissions
             ],
             'Discovery' => [
                 self::DIRECTORY_VIEW => 'Browse the verified operator directory',
+            ],
+            'Messaging (SMS)' => [
+                self::SMS_VIEW => 'View SMS balance, sender IDs and the message log',
+                self::SMS_MANAGE => 'Configure the SMS gateway, sender ID and credit alerts',
+                self::SMS_SEND => 'Send SMS messages (including test sends)',
             ],
             'Customer self-service' => [
                 self::ADDRESSES_MANAGE => 'Manage delivery addresses',

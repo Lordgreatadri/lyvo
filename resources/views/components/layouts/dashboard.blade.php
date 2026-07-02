@@ -30,6 +30,7 @@
             ['label' => 'Verification',  'icon' => 'shield',    'route' => 'admin.verification'],
             ['label' => 'Users',         'icon' => 'users',     'route' => 'admin.users.index'],
             ['label' => 'Roles',         'icon' => 'lock',      'route' => 'admin.roles.index'],
+            ['label' => 'SMS',           'icon' => 'inbox',     'route' => 'admin.sms.index'],
             ['label' => 'Settings',      'icon' => 'settings',  'route' => 'profile.edit'],
         ],
     ];
