@@ -63,6 +63,10 @@ class Permissions
     public const SMS_MANAGE = 'sms.manage';
     public const SMS_SEND = 'sms.send';
 
+    // ---- Payments (gateway) -------------------------------------------------
+    public const PAYMENTS_VIEW = 'payments.view';
+    public const PAYMENTS_MANAGE = 'payments.manage';
+
     // ---- Customer self-service ---------------------------------------------
     public const ADDRESSES_MANAGE = 'addresses.manage';
     public const PAYMENT_METHODS_MANAGE = 'payment-methods.manage';
@@ -121,6 +125,10 @@ class Permissions
                 self::SMS_VIEW => 'View SMS balance, sender IDs and the message log',
                 self::SMS_MANAGE => 'Configure the SMS gateway, sender ID and credit alerts',
                 self::SMS_SEND => 'Send SMS messages (including test sends)',
+            ],
+            'Payments (gateway)' => [
+                self::PAYMENTS_VIEW => 'View payment transactions and settlement analytics',
+                self::PAYMENTS_MANAGE => 'Configure the payment gateway and reconcile transactions',
             ],
             'Customer self-service' => [
                 self::ADDRESSES_MANAGE => 'Manage delivery addresses',

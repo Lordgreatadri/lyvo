@@ -145,10 +145,10 @@ return [
             'path' => storage_path('logs/moolresmsapi.log'),
             'level' => env('LOG_LEVEL', 'debug'),
         ],
-        'moolre_momoapi' => [
+        'moolre_paymentapi' => [
             'driver' => 'daily',
             'days' => 14,
-            'path' => storage_path('logs/moolremomoapi.log'),
+            'path' => storage_path('logs/moolrepaymentapi.log'),
             'level' => env('LOG_LEVEL', 'debug'),
         ],
     ],
