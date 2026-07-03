@@ -4,6 +4,58 @@ All notable changes to the LYVO platform are documented here. Dates use `YYYY-MM
 
 ---
 
+## [Unreleased] — Marketplace — Phase 2A (Catalogue foundation)
+
+> Approved operators can now list items for sale and a public marketplace surfaces them.
+> This is the first slice of the commerce build (catalogue → promotion → orders/escrow →
+> analytics). Listings are performance-first: the public "top of home" ordering reads a
+> denormalised `boost_weight` (kept in sync by the promotion domain in Phase 2B) so the hot
+> query is a single index-ordered scan with no joins, and all store queries eager-load to
+> avoid N+1.
+
+### Added
+
+**Catalogue domain & model**
+- `Enums\ProductStatus` (draft, active, sold_out, archived) with `label/color`,
+  `isPublicallyVisible`, `isBuyable`.
+- `Models\Product` — an operator's catalogue item (uuid-routed, soft-deletes, Spatie media
+  "images" collection with a `thumb` conversion). `scopePublished` / `scopeStoreOrdered`
+  encapsulate public-visibility and boost-first ordering; `isPublished/isInStock/isBoosted`
+  helpers. Denormalised boost columns (`is_featured`, `boost_weight`, `boosted_until`) plus
+  `views` / `sold_count` counters.
+- `products` migration — indexed for the queries the store runs (`[status, published_at]`,
+  `[boost_weight, published_at]`, `business_category_id`); slug unique per operator.
+- `Src\Domain\Catalog\ProductService` — catalogue writes: per-operator unique slug
+  generation, stock-derived Active↔SoldOut reconciliation, image attachment and the
+  publish/unpublish lifecycle.
+
+**Authorization**
+- `Policies\ProductPolicy` — ownership-scoped operator actions (`products.view/manage` +
+  approved-operator gate); registered in `AuthServiceProvider`.
+
+**Operator workspace**
+- `Operator\ProductController` (resource, `authorizeResource`) + `publish`/`unpublish`,
+  routes under `operator.products.*`, `Requests\Operator\ProductRequest`, and Blade screens
+  (catalogue index, create/edit forms). Operator sidebar "Products" now points at the real
+  catalogue.
+
+**Public marketplace**
+- `StoreController` (`store.index` / `store.show`) — published items, boosted-first,
+  category-filtered and paginated; item pages count a view and show related items and a
+  "Pay with LYVO Escrow" call-to-action. `store/*` Blade views + reusable
+  `x-product-card` component.
+
+**Factories / seeders**
+- `ProductFactory` (+ `published`/`boosted` states), `OperatorProfileFactory`
+  (+ `approved`), `BusinessCategoryFactory`; `HasFactory` added to the three models.
+- `DemoProductSeeder` — publishes a demo catalogue for the approved operator (wired into
+  `DatabaseSeeder`).
+
+**Tests** — `Catalog\ProductServiceTest`, `Catalog\StoreListingTest`,
+`Catalog\OperatorProductTest` (14 cases; full suite 99 green).
+
+---
+
 ## [Unreleased] — Payment Gateway (Moolre) — Phase 1
 
 > A scalable, provider-agnostic payment layer living under `src/Domain/Payment`, built to

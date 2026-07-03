@@ -2,50 +2,49 @@
 
 namespace App\Http\Controllers;
 
-use App\Support\DemoData;
+use App\Models\BusinessCategory;
+use App\Models\OperatorProfile;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 class DirectoryController extends Controller
 {
     /**
-     * Verified operator directory.
+     * Verified operator directory (real, approved operators only).
      */
     public function index(Request $request): View
     {
         $category = $request->query('category');
-        $operators = DemoData::operators();
 
-        if ($category) {
-            $operators = array_values(array_filter(
-                $operators,
-                fn (array $operator) => $operator['category_slug'] === $category,
-            ));
-        }
+        $operators = OperatorProfile::approved()
+            ->with('category:id,name,slug')
+            ->withCount(['products as published_products_count' => fn ($q) => $q->published()])
+            ->when($category, fn ($q) => $q->whereHas('category', fn ($c) => $c->where('slug', $category)))
+            ->orderByDesc('trust_score')
+            ->paginate(12)
+            ->withQueryString();
 
         return view('directory.index', [
-            'categories'     => DemoData::categories(),
+            'categories'     => BusinessCategory::orderBy('name')->get(),
             'operators'      => $operators,
             'activeCategory' => $category,
         ]);
     }
 
     /**
-     * Operator profile page, resolved by UUID (not auto-increment PK).
+     * Operator profile page, resolved by UUID (approved operators only).
      */
-    public function show(string $operator): View
+    public function show(OperatorProfile $operator): View
     {
-        $record = DemoData::operator($operator);
+        abort_unless($operator->isApproved(), 404);
 
-        if (! $record) {
-            throw new NotFoundHttpException('Operator not found.');
-        }
+        $operator->load('category:id,name,slug', 'user:id,name');
+
+        $products = $operator->products()->published()->storeOrdered()->get();
 
         return view('directory.show', [
-            'operator' => $record,
-            'products' => DemoData::products(),
-            'reviews'  => DemoData::reviews(),
+            'operator' => $operator,
+            'products' => $products,
         ]);
     }
 }

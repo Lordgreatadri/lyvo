@@ -6,36 +6,53 @@
 ])
 
 @php
-    // Navigation maps per role. Routes resolve to Phase 1 placeholder screens.
+    // Navigation maps per role. Each item may declare a `match` wildcard so child
+    // pages (e.g. an order detail) keep their parent menu highlighted, and a
+    // `primary` flag marking the items surfaced in the mobile bottom bar.
     $navByRole = [
         'customer' => [
-            ['label' => 'Overview',    'icon' => 'home',     'route' => 'customer.dashboard'],
-            ['label' => 'Escrow',      'icon' => 'shield',   'route' => 'escrow.index'],
-            ['label' => 'Operators',   'icon' => 'users',    'route' => 'directory.index'],
-            ['label' => 'Addresses',   'icon' => 'home',     'route' => 'customer.addresses.index'],
-            ['label' => 'Payment',     'icon' => 'lock',     'route' => 'customer.payment-methods.index'],
-            ['label' => 'Settings',    'icon' => 'settings', 'route' => 'profile.edit'],
+            ['label' => 'Overview',  'icon' => 'home',     'route' => 'customer.dashboard', 'primary' => true],
+            ['label' => 'Orders',    'icon' => 'box',      'route' => 'customer.orders.index', 'match' => 'customer.orders.*', 'primary' => true],
+            ['label' => 'Escrow',    'icon' => 'shield',   'route' => 'escrow.index', 'match' => 'escrow.*', 'primary' => true],
+            ['label' => 'Operators', 'icon' => 'users',    'route' => 'directory.index', 'match' => 'directory.*', 'primary' => true],
+            ['label' => 'Addresses', 'icon' => 'map-pin',  'route' => 'customer.addresses.index', 'match' => 'customer.addresses.*'],
+            ['label' => 'Payment',   'icon' => 'lock',     'route' => 'customer.payment-methods.index', 'match' => 'customer.payment-methods.*'],
+            ['label' => 'Settings',  'icon' => 'settings', 'route' => 'profile.edit', 'primary' => true],
         ],
         'operator' => [
-            ['label' => 'Overview',    'icon' => 'home',     'route' => 'operator.dashboard'],
-            ['label' => 'Escrow',      'icon' => 'shield',   'route' => 'escrow.index'],
-            ['label' => 'Products',    'icon' => 'box',      'route' => 'operator.dashboard'],
-            ['label' => 'Verification','icon' => 'badge',    'route' => 'operator.verification'],
-            ['label' => 'Leads',       'icon' => 'inbox',    'route' => 'operator.dashboard'],
-            ['label' => 'Settings',    'icon' => 'settings', 'route' => 'profile.edit'],
+            ['label' => 'Overview',     'icon' => 'home',     'route' => 'operator.dashboard', 'primary' => true],
+            ['label' => 'Orders',       'icon' => 'box',      'route' => 'operator.orders.index', 'match' => 'operator.orders.*', 'primary' => true],
+            ['label' => 'Customers',    'icon' => 'users',    'route' => 'operator.customers.index', 'match' => 'operator.customers.*', 'primary' => true],
+            ['label' => 'Products',     'icon' => 'clipboard','route' => 'operator.products.index', 'match' => 'operator.products.*', 'primary' => true],
+            ['label' => 'Escrow',       'icon' => 'shield',   'route' => 'escrow.index', 'match' => 'escrow.*'],
+            ['label' => 'Verification', 'icon' => 'badge',    'route' => 'operator.verification'],
+            ['label' => 'Settings',     'icon' => 'settings', 'route' => 'profile.edit', 'primary' => true],
         ],
         'admin' => [
-            ['label' => 'Overview',      'icon' => 'chart',     'route' => 'admin.dashboard'],
-            ['label' => 'Operators',     'icon' => 'badge',     'route' => 'admin.operators.index'],
-            ['label' => 'Verification',  'icon' => 'shield',    'route' => 'admin.verification'],
-            ['label' => 'Users',         'icon' => 'users',     'route' => 'admin.users.index'],
-            ['label' => 'Roles',         'icon' => 'lock',      'route' => 'admin.roles.index'],
-            ['label' => 'SMS',           'icon' => 'inbox',     'route' => 'admin.sms.index'],
-            ['label' => 'Settings',      'icon' => 'settings',  'route' => 'profile.edit'],
+            ['label' => 'Overview',     'icon' => 'chart',    'route' => 'admin.dashboard', 'primary' => true],
+            ['label' => 'Orders',       'icon' => 'box',      'route' => 'admin.orders.index', 'match' => 'admin.orders.*', 'primary' => true],
+            ['label' => 'Operators',    'icon' => 'badge',    'route' => 'admin.operators.index', 'match' => 'admin.operators.*', 'primary' => true],
+            ['label' => 'Verification', 'icon' => 'shield',   'route' => 'admin.verification', 'primary' => true],
+            ['label' => 'Users',        'icon' => 'users',    'route' => 'admin.users.index', 'match' => 'admin.users.*'],
+            ['label' => 'Roles',        'icon' => 'lock',     'route' => 'admin.roles.index', 'match' => 'admin.roles.*'],
+            ['label' => 'SMS',          'icon' => 'inbox',    'route' => 'admin.sms.index'],
+            ['label' => 'Settings',     'icon' => 'settings', 'route' => 'profile.edit', 'primary' => true],
         ],
     ];
 
     $nav = $navByRole[$role] ?? $navByRole['customer'];
+
+    // Active detection honours an optional wildcard `match` so nested pages stay lit.
+    $isActive = fn (array $item) => request()->routeIs($item['match'] ?? $item['route']);
+
+    // Mobile bottom bar shows the flagged primary items (max 5), always including
+    // the currently active section so a menu never "disappears" on a child page.
+    $mobileNav = collect($nav)->filter(fn ($i) => ($i['primary'] ?? false))->take(5)->values();
+    if (! $mobileNav->contains(fn ($i) => $isActive($i))) {
+        if ($current = collect($nav)->first(fn ($i) => $isActive($i))) {
+            $mobileNav = $mobileNav->take(4)->push($current)->values();
+        }
+    }
 
     $roleMeta = [
         'customer' => ['name' => 'Customer',          'sub' => 'Customer',          'avatar' => 'from-sky-500 to-blue-600'],
@@ -78,7 +95,7 @@
 
         <nav class="mt-6 flex-1 space-y-1 px-4">
             @foreach ($nav as $item)
-                @php $active = request()->routeIs($item['route']); @endphp
+                @php $active = $isActive($item); @endphp
                 <a href="{{ route($item['route']) }}" class="side-link {{ $active ? 'side-link-active' : '' }}">
                     <x-icon name="{{ $item['icon'] }}" class="h-5 w-5" />
                     {{ $item['label'] }}
@@ -116,7 +133,7 @@
             </div>
             <nav class="mt-4 flex-1 space-y-1 px-4">
                 @foreach ($nav as $item)
-                    @php $active = request()->routeIs($item['route']); @endphp
+                    @php $active = $isActive($item); @endphp
                     <a href="{{ route($item['route']) }}" class="side-link {{ $active ? 'side-link-active' : '' }}">
                         <x-icon name="{{ $item['icon'] }}" class="h-5 w-5" />
                         {{ $item['label'] }}
@@ -171,8 +188,8 @@
     {{-- ============ MOBILE BOTTOM NAV ============ --}}
     <nav class="fixed inset-x-0 bottom-0 z-40 border-t border-slate-100 bg-white/90 backdrop-blur-xl lg:hidden">
         <div class="grid grid-cols-5">
-            @foreach (array_slice($nav, 0, 5) as $item)
-                @php $active = request()->routeIs($item['route']); @endphp
+            @foreach ($mobileNav as $item)
+                @php $active = $isActive($item); @endphp
                 <a href="{{ route($item['route']) }}" class="flex flex-col items-center gap-1 py-2.5 text-[11px] font-medium {{ $active ? 'text-primary-600' : 'text-ink-muted' }}">
                     <x-icon name="{{ $item['icon'] }}" class="h-5 w-5" />
                     {{ $item['label'] }}

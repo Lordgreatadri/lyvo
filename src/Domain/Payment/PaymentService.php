@@ -178,7 +178,20 @@ class PaymentService
             $columns['failed_at'] = now();
         }
 
-        return PaymentTransaction::query()->where('ref', $externalRef)->update($columns);
+        $updated = PaymentTransaction::query()->where('ref', $externalRef)->update($columns);
+
+        // Announce terminal settlement so other domains (e.g. escrow) can react
+        // without the Payment domain depending on them. Loads the single indexed
+        // row with its payable so the listener has full context.
+        if ($updated > 0 && $status->isTerminal()) {
+            $transaction = PaymentTransaction::with('payable')->where('ref', $externalRef)->first();
+
+            if ($transaction !== null) {
+                \App\Events\PaymentSettled::dispatch($transaction);
+            }
+        }
+
+        return $updated;
     }
 
     public function providerName(): string

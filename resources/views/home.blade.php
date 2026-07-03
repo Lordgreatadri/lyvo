@@ -163,8 +163,8 @@
             </div>
 
             <div class="mt-12 text-center">
-                <a href="{{ route('escrow.index') }}" class="btn-dark">
-                    See the escrow demo
+                <a href="{{ route('store.index') }}" class="btn-dark">
+                    Browse the marketplace
                     <x-icon name="arrow-right" class="h-4 w-4" />
                 </a>
             </div>
@@ -184,13 +184,13 @@
 
             <div class="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
                 @foreach ($categories as $category)
-                    <a href="{{ route('directory.index', ['category' => $category['slug']]) }}" class="card card-hover group flex items-center gap-4 p-5">
+                    <a href="{{ route('directory.index', ['category' => $category->slug]) }}" class="card card-hover group flex items-center gap-4 p-5">
                         <span class="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-lyvo-gradient-soft text-primary-600 transition group-hover:bg-lyvo-gradient group-hover:text-white">
-                            <x-icon name="{{ $category['icon'] }}" class="h-6 w-6" />
+                            <x-icon name="{{ $category->icon ?? 'briefcase' }}" class="h-6 w-6" />
                         </span>
                         <div>
-                            <p class="font-semibold text-ink">{{ $category['name'] }}</p>
-                            <p class="text-xs text-ink-muted">{{ $category['count'] }} operators</p>
+                            <p class="font-semibold text-ink">{{ $category->name }}</p>
+                            <p class="text-xs text-ink-muted">{{ $category->operators_count }} operators</p>
                         </div>
                     </a>
                 @endforeach
@@ -210,9 +210,11 @@
             </div>
 
             <div class="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach (array_slice($operators, 0, 6) as $operator)
+                @forelse ($operators as $operator)
                     <x-operator-card :operator="$operator" />
-                @endforeach
+                @empty
+                    <p class="col-span-full text-center text-sm text-ink-muted">Verified operators will appear here soon.</p>
+                @endforelse
             </div>
         </div>
     </section>

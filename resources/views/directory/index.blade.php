@@ -38,10 +38,10 @@
             <a href="{{ route('directory.index') }}"
                class="badge shrink-0 {{ empty($activeCategory) ? 'bg-ink text-white' : 'bg-surface-muted text-ink-soft hover:bg-slate-100' }}">All</a>
             @foreach ($categories as $category)
-                <a href="{{ route('directory.index', ['category' => $category['slug']]) }}"
-                   class="badge shrink-0 {{ ($activeCategory ?? null) === $category['slug'] ? 'bg-ink text-white' : 'bg-surface-muted text-ink-soft hover:bg-slate-100' }}">
-                    <x-icon name="{{ $category['icon'] }}" class="h-3.5 w-3.5" />
-                    {{ $category['name'] }}
+                <a href="{{ route('directory.index', ['category' => $category->slug]) }}"
+                   class="badge shrink-0 {{ ($activeCategory ?? null) === $category->slug ? 'bg-ink text-white' : 'bg-surface-muted text-ink-soft hover:bg-slate-100' }}">
+                    @if ($category->icon)<x-icon name="{{ $category->icon }}" class="h-3.5 w-3.5" />@endif
+                    {{ $category->name }}
                 </a>
             @endforeach
         </div>
@@ -51,22 +51,26 @@
     <section class="section bg-surface-muted">
         <div class="container-lyvo">
             <div class="mb-8 flex flex-wrap items-center justify-between gap-3">
-                <p class="text-sm text-ink-muted"><span class="font-semibold text-ink">{{ count($operators) }}</span> verified operators</p>
-                <div class="flex items-center gap-2">
-                    <span class="text-sm text-ink-muted">Sort:</span>
-                    <select class="form-select py-2 text-sm">
-                        <option>Top rated</option>
-                        <option>Trust score</option>
-                        <option>Newest</option>
-                    </select>
-                </div>
+                <p class="text-sm text-ink-muted"><span class="font-semibold text-ink">{{ $operators->total() }}</span> verified operators</p>
             </div>
 
-            <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-                @foreach ($operators as $operator)
-                    <x-operator-card :operator="$operator" />
-                @endforeach
-            </div>
+            @if ($operators->isEmpty())
+                <div class="card p-12 text-center">
+                    <span class="mx-auto grid h-14 w-14 place-items-center rounded-2xl bg-surface-muted text-ink-muted"><x-icon name="users" class="h-7 w-7" /></span>
+                    <p class="mt-4 font-semibold text-ink">No operators found</p>
+                    <p class="mt-1 text-sm text-ink-muted">Try a different category.</p>
+                </div>
+            @else
+                <div class="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                    @foreach ($operators as $operator)
+                        <x-operator-card :operator="$operator" />
+                    @endforeach
+                </div>
+
+                @if ($operators->hasPages())
+                    <div class="mt-8">{{ $operators->links() }}</div>
+                @endif
+            @endif
         </div>
     </section>
 
