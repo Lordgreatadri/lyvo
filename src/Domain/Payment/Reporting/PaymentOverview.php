@@ -171,7 +171,7 @@ class PaymentOverview
     private function money(float $amount): string
     {
         $currency = (string) config('payment.currency', 'GHS');
-        $symbol = $currency === 'GHS' ? 'GH₵' : $currency . ' ';
+        $symbol = $currency === 'GHS' ? 'GH₵' : $currency;
 
         if ($amount >= 1000) {
             return $symbol . ' ' . rtrim(rtrim(number_format($amount / 1000, 1), '0'), '.') . 'k';

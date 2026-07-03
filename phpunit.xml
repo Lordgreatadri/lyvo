@@ -38,9 +38,6 @@
         <!-- Force the network-free "log" payment driver so tests never call the
              real Moolre gateway or move money. -->
         <env name="PAYMENT_PROVIDER" value="log"/>
-        <!-- No payment webhook secret in tests so simulated Moolre settlement
-             callbacks are accepted. Production sets MOOLRE_PAY_WEBHOOK_SECRET. -->
-        <env name="MOOLRE_PAY_WEBHOOK_SECRET" value=""/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>
 </phpunit>

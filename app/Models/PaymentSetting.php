@@ -22,13 +22,21 @@ class PaymentSetting extends Model
 {
     use BindsOnUuid, GeneratesUuid;
 
+    /**
+     * Fixed value of the `singleton` column. A UNIQUE index on that column is what
+     * actually enforces the one-row invariant at the database level.
+     */
+    private const SINGLETON = 1;
+
     protected $fillable = [
         'uuid',
+        'singleton',
         'provider',
         'currency',
     ];
 
     protected $casts = [
+        'singleton' => 'integer',
         'uuid' => 'string',
     ];
 
@@ -36,14 +44,22 @@ class PaymentSetting extends Model
 
     /**
      * The single settings row, created on first access from config defaults.
-     * Memoised per-request to avoid repeat queries on hot paths.
+     *
+     * The row is keyed on the unique `singleton` column, so the one-row invariant
+     * is enforced by the database — not by convention. On Laravel 10 `firstOrCreate`
+     * resolves a concurrent-creation race safely (it catches the unique-constraint
+     * violation and re-queries the winning row), so no explicit lock is needed.
+     * The result is memoised per-request to avoid repeat queries on hot paths.
      */
     public static function current(): self
     {
-        return self::$cached ??= self::query()->firstOrCreate([], [
-            'provider' => config('payment.default', 'log'),
-            'currency' => config('payment.currency', 'GHS'),
-        ]);
+        return self::$cached ??= self::query()->firstOrCreate(
+            ['singleton' => self::SINGLETON],
+            [
+                'provider' => config('payment.default', 'log'),
+                'currency' => config('payment.currency', 'GHS'),
+            ],
+        );
     }
 
     /** Reset the per-request cache (used in tests and after updates). */

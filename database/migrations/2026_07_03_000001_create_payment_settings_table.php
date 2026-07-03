@@ -20,6 +20,9 @@ return new class extends Migration
         Schema::create('payment_settings', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
+            // Enforces the single-row invariant at the DB level: only one row can
+            // ever carry this fixed value. PaymentSetting::current() keys on it.
+            $table->unsignedTinyInteger('singleton')->default(1)->unique();
             $table->string('provider', 32)->default('log');
             $table->string('currency', 3)->default('GHS');
             $table->timestamps();

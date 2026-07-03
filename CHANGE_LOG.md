@@ -67,11 +67,11 @@ All notable changes to the LYVO platform are documented here. Dates use `YYYY-MM
   implementing `PaymentProviderInterface`, registering a `config/payment.php` block and a
   webhook config — no call sites change.
 - **Test isolation:** `phpunit.xml` forces `PAYMENT_PROVIDER=log` and blank
-  `MOOLRE_PAY_WEBHOOK_SECRET`, so tests never reach the live gateway or move money.
+  `MOOLRE_WEBHOOK_SECRET`, so tests never reach the live gateway or move money.
 - The Moolre payment webhook secret is in the **body** (`data.secret`), not a header —
   the validator differs from the SMS one accordingly.
 - Query builder does **not** cast enums — `applyStatus()` persists `$status->value`.
-- Full docs: [DevDocs/payment-api.md](DevDocs/payment-api.md).
+- Full docs: [docs/payment-api.md](docs/payment-api.md).
 
 ### Tests
 - `Unit\Payment\PaymentEnumsTest`, `Payment\MoolrePaymentProviderTest` (Guzzle mock),
@@ -160,7 +160,7 @@ All notable changes to the LYVO platform are documented here. Dates use `YYYY-MM
   `MOOLRE_WEBHOOK_SECRET`, so tests never reach the live gateway. Any future external
   API needs the same override (no `.env.testing` exists — `.env` leaks into tests).
 - Query builder does **not** cast enums — `applyStatus()` persists `$status->value`.
-- Full docs: [DevDocs/sms-api.md](docs/sms-api.md).
+- Full docs: [docs/sms-api.md](docs/sms-api.md).
 
 ### Tests
 - `Sms\SmsEncodingTest`, `Sms\MoolreSmsProviderTest` (Guzzle mock), `Sms\SmsServiceTest`,
