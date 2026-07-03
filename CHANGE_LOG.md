@@ -4,6 +4,89 @@ All notable changes to the LYVO platform are documented here. Dates use `YYYY-MM
 
 ---
 
+## [Unreleased] — Payment Gateway (Moolre) — Phase 1
+
+> A scalable, provider-agnostic payment layer living under `src/Domain/Payment`, built to
+> the same isolated/decoupled pattern as the SMS domain. Every platform collection flows
+> through one `PaymentService`, backed by a swappable provider (Moolre in production, a
+> network-free `log` driver in dev/test). A durable `payment_transactions` ledger records
+> each collection and its full lifecycle (pending → OTP/approval → settled), and Moolre
+> settlement callbacks reconcile status via a signed Spatie webhook. New gateways drop in
+> without touching call sites. Every gateway exchange is written to the dedicated
+> `moolre_paymentapi` log channel. This phase delivers the isolated gateway integration
+> and its tests; platform orders/escrow (Phase 2) and dashboards (Phase 3) build on top.
+
+### Added
+
+**Payment domain (`src/Domain/Payment`, PSR-4 `Src\`)**
+- `Contracts\PaymentProviderInterface` — provider contract: `name/charge/status`.
+- `Providers\MoolrePaymentProvider` — live Guzzle client, `X-API-USER` + `X-API-PUBKEY`
+  auth headers; charge `POST /open/transact/payment` (`type:1`), status
+  `POST /open/transact/status` (`type:1`, `idtype:externalref`). Interprets Moolre
+  `status===1` as accepted, code `TP14` as OTP-required, and maps `txstatus`
+  (0/1/2 → Processing/Successful/Failed).
+- `Providers\LogPaymentProvider` — network-free driver used in local/testing so no real
+  money moves.
+- `PaymentService` — the application entry point: normalises the payer, persists a
+  `PaymentTransaction`, delegates to the active provider, drives the OTP flow
+  (`charge/submitOtp`), and reconciles settlement (`syncStatus/applyStatus`).
+- `DTOs\PaymentRequestDto` (immutable, uuid `externalRef` idempotency key, `withOtp()`),
+  `DTOs\PaymentResult` (`accepted/failed` factories).
+
+**Enums / models / migrations**
+- `Enums\PaymentStatus` (pending, awaiting_otp, awaiting_approval, processing, successful,
+  failed) with `label/color/isTerminal/isOpen` and `fromMoolreTxStatus()`;
+  `Enums\PaymentChannel` (MTN/Telecel/AirtelTigo) with `moolreCode()` 13/6/7.
+- `PaymentTransaction` — one row per collection (ref, provider ids, channel, amount/value,
+  payer, status, polymorphic `payable`, otp flags, settlement timestamps, `meta`) with
+  `[status, created_at]` + payer/user/context/provider-txn indexes.
+- `PaymentSetting` — single-row config cache (provider, currency) via memoised
+  `current()`/`flushCache()`.
+- Migrations: `create_payment_settings_table` (standalone payment-integration migration,
+  first), then `create_payment_transactions_table`.
+
+**Webhooks**
+- Spatie webhook-client `moolre-payment` config → `Jobs\ProcessMoolrePaymentWebhookJob`
+  reconciles settlement by `externalref`; `Support\Webhooks\MoolrePaymentSignatureValidator`
+  verifies the shared secret carried in the request **body** (`data.secret`, unlike the
+  header-based SMS validator), constant-time, skipping only when no secret is configured.
+- Route `/api/webhooks/moolre/payment` registered in the central `routes/webhook.php`.
+
+**Config / permissions**
+- `config/payment.php` — default driver, currency (GHS), country code (233), status cache
+  TTL, `moolre_paymentapi` log channel, the `moolre` / `log` provider blocks and the
+  webhook secret.
+- Permissions `payments.view`, `payments.manage` (new **Payments (gateway)** group in
+  `Support\Permissions`).
+- `App\Providers\PaymentServiceProvider` (deferred) — binds the active provider from
+  `PaymentSetting::current()->provider` (falling back to `config('payment.default')`),
+  registered in `config/app.php`.
+
+### Notes
+- Provider is swappable at runtime via the payment settings; add a new gateway by
+  implementing `PaymentProviderInterface`, registering a `config/payment.php` block and a
+  webhook config — no call sites change.
+- **Test isolation:** `phpunit.xml` forces `PAYMENT_PROVIDER=log` and blank
+  `MOOLRE_WEBHOOK_SECRET`, so tests never reach the live gateway or move money.
+- The Moolre payment webhook secret is in the **body** (`data.secret`), not a header —
+  the validator differs from the SMS one accordingly.
+- Query builder does **not** cast enums — `applyStatus()` persists `$status->value`.
+- Full docs: [docs/payment-api.md](docs/payment-api.md).
+
+### Tests
+- `Unit\Payment\PaymentEnumsTest`, `Payment\MoolrePaymentProviderTest` (Guzzle mock),
+  `Payment\PaymentServiceTest`, `Payment\MoolrePaymentWebhookTest` — 14 tests; full suite
+  81 passing.
+
+### Roadmap (upcoming)
+- **Phase 2** — platform order/escrow migration (after the payment migration), Order model
+  with a `payable` morph to `PaymentTransaction`, escrow lifecycle service and the
+  customer-pay / operator-fulfil / buyer-confirm flows.
+- **Phase 3** — admin payments analytics dashboard, operator transaction details and
+  customer escrow views.
+
+---
+
 ## [Unreleased] — SMS Gateway (Moolre)
 
 > A scalable, provider-agnostic SMS layer living under `src/Domain/Sms`. Every SMS in
