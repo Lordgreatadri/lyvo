@@ -169,10 +169,19 @@ class EscrowService
     private function reserveStock(Order $order): void
     {
         foreach ($order->items as $item) {
-            if ($item->product_id) {
-                $item->product()->where('quantity', '>', 0)->decrement('quantity', $item->quantity);
-                $item->product()->increment('sold_count', $item->quantity);
+            if (! $item->product_id) {
+                continue;
             }
+
+            // Services carry a NULL quantity (unlimited) — skip the decrement and
+            // only record the sale. For tracked stock, decrement atomically and
+            // only when enough remains so an unsigned column cannot underflow.
+            $item->product()
+                ->whereNotNull('quantity')
+                ->where('quantity', '>=', $item->quantity)
+                ->decrement('quantity', $item->quantity);
+
+            $item->product()->increment('sold_count', $item->quantity);
         }
     }
 

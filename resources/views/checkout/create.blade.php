@@ -103,6 +103,7 @@
                         </div>
                         <div class="p-5">
                             <button type="submit" class="btn-primary w-full"><x-icon name="lock" class="h-5 w-5" /> Pay securely</button>
+                      
                             <p class="mt-3 text-xs text-ink-muted">By continuing you agree funds stay in escrow until you confirm delivery.</p>
                         </div>
                     </div>

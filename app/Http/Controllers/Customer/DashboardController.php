@@ -20,8 +20,10 @@ class DashboardController extends Controller
         $protected = $active->sum('total');
 
         // Operators this customer has bought from, most recent first.
-        $operatorIds = Order::forCustomer($userId)->latest()->pluck('operator_profile_id')->unique()->take(3);
-        $operators = OperatorProfile::whereIn('id', $operatorIds)->get();
+        $operatorIds = Order::forCustomer($userId)->latest()->pluck('operator_profile_id')->unique()->take(3)->values();
+        $operators = OperatorProfile::whereIn('id', $operatorIds)->get()
+            ->sortBy(fn ($operator) => $operatorIds->search($operator->id))
+            ->values();
 
         return view('customer.dashboard', [
             'metrics' => [

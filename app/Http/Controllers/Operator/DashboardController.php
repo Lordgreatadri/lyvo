@@ -33,7 +33,7 @@ class DashboardController extends Controller
                 ['label' => 'Customers',      'value' => (string) $customerCount,                          'delta' => 'Lifetime',                  'icon' => 'users'],
             ],
             'recent'   => Order::forOperator($profileId)->with(['customer:id,name', 'items'])->latest()->limit(5)->get(),
-            'products' => Product::where('operator_profile_id', $profileId)->latest()->limit(3)->get(),
+            'products' => Product::with('media')->where('operator_profile_id', $profileId)->latest()->limit(3)->get(),
             'productCount' => Product::where('operator_profile_id', $profileId)->count(),
         ]);
     }

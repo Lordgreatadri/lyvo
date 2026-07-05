@@ -23,6 +23,17 @@ class CheckoutController extends Controller
 {
     public function create(Request $request, Product $product): View|RedirectResponse
     {
+        $addresses = $request->user()
+            ->deliveryAddresses()
+            ->orderByDesc('is_default')
+            ->get();
+
+        if ($addresses->isEmpty()) {
+            return redirect()
+                ->route('customer.addresses.index')
+                ->with('error', 'Please add a delivery address before checking out.');
+        }
+
         $product->load('operator', 'category');
 
         if (! $product->isPublished()) {
@@ -31,7 +42,7 @@ class CheckoutController extends Controller
 
         return view('checkout.create', [
             'product' => $product,
-            'addresses' => $request->user()->deliveryAddresses()->orderByDesc('is_default')->get(),
+            'addresses' => $addresses,
             'channels' => PaymentChannel::cases(),
         ]);
     }
@@ -42,11 +53,11 @@ class CheckoutController extends Controller
             'quantity' => ['required', 'integer', 'min:1', 'max:20'],
             'channel' => ['required', Rule::enum(PaymentChannel::class)],
             'payer_phone' => ['required', 'string', 'max:20'],
-            'delivery_address_id' => ['nullable', 'integer', Rule::exists('delivery_addresses', 'id')->where('user_id', $request->user()->id)],
+            'delivery_address_id' => ['required', 'integer', Rule::exists('delivery_addresses', 'id')->where('user_id', $request->user()->id)],
             'note' => ['nullable', 'string', 'max:500'],
         ]);
 
-        $address = $data['delivery_address_id']
+        $address = isset($data['delivery_address_id'])
             ? $request->user()->deliveryAddresses()->find($data['delivery_address_id'])
             : null;
 

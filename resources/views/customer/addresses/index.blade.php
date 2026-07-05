@@ -3,6 +3,9 @@
     @if (session('status'))
         <div class="mb-4 rounded-2xl bg-primary-50 px-4 py-3 text-sm font-medium text-primary-700">{{ session('status') }}</div>
     @endif
+    @if (session('error'))
+        <div class="mb-4 rounded-2xl bg-amber-400 px-4 py-3 text-sm font-medium text-amber-900"><b>{{ session('error') }} </b></div>
+    @endif
 
     <div class="grid gap-6 lg:grid-cols-3">
         {{-- Saved addresses --}}
