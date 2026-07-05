@@ -97,24 +97,24 @@
                     <h2 class="font-semibold text-ink">Verification Center</h2>
                     <p class="text-xs text-ink-muted">Pending business applications</p>
                 </div>
-                <a href="{{ route('admin.verification') }}" class="btn-outline btn-sm">Open center</a>
+                <a href="{{ route('admin.operators.index') }}" class="btn-outline btn-sm">Open center</a>
             </div>
             <div class="divide-y divide-slate-100">
-                @foreach ($queue as $item)
-                    <div class="flex items-center gap-4 p-4">
+                @forelse ($queue as $profile)
+                    <a href="{{ route('admin.operators.show', $profile) }}" class="flex items-center gap-4 p-4 transition hover:bg-surface-muted">
                         <span class="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-surface-muted text-sm font-bold text-ink">
-                            {{ \Illuminate\Support\Str::of($item['business'])->explode(' ')->map(fn ($p) => $p[0])->take(2)->implode('') }}
+                            {{ \Illuminate\Support\Str::of($profile->business_name)->explode(' ')->map(fn ($p) => $p[0])->take(2)->implode('') }}
                         </span>
                         <div class="min-w-0 flex-1">
-                            <p class="truncate text-sm font-semibold text-ink">{{ $item['business'] }}</p>
-                            <p class="truncate text-xs text-ink-muted">{{ $item['owner'] }} · {{ $item['category'] }} · {{ $item['submitted'] }}</p>
+                            <p class="truncate text-sm font-semibold text-ink">{{ $profile->business_name }}</p>
+                            <p class="truncate text-xs text-ink-muted">{{ $profile->user?->name }} · {{ $profile->category?->name ?? '—' }} · {{ $profile->created_at->diffForHumans() }}</p>
                         </div>
-                        @php
-                            $riskBadge = ['low' => 'badge-verified', 'medium' => 'badge-pending', 'high' => 'badge-rejected'][$item['risk']];
-                        @endphp
-                        <span class="{{ $riskBadge }}">{{ ucfirst($item['risk']) }} risk</span>
-                    </div>
-                @endforeach
+                        @php $badge = ['amber' => 'badge-pending', 'sky' => 'badge bg-sky-50 text-sky-700', 'emerald' => 'badge-verified', 'rose' => 'badge-rejected'][$profile->verification_status->badgeColor()] ?? 'badge'; @endphp
+                        <span class="{{ $badge }}">{{ $profile->verification_status->label() }}</span>
+                    </a>
+                @empty
+                    <div class="p-8 text-center text-sm text-ink-muted">No applications waiting for review.</div>
+                @endforelse
             </div>
         </div>
 
@@ -123,25 +123,27 @@
             <div class="card p-5">
                 <h2 class="font-semibold text-ink">Escrow Monitor</h2>
                 <div class="mt-4 space-y-3 text-sm">
-                    <div class="flex items-center justify-between"><span class="flex items-center gap-2 text-ink-soft"><span class="h-2 w-2 rounded-full bg-indigo-500"></span> Held funds</span><span class="font-semibold text-ink">GH₵ 182k</span></div>
-                    <div class="flex items-center justify-between"><span class="flex items-center gap-2 text-ink-soft"><span class="h-2 w-2 rounded-full bg-primary-500"></span> Released</span><span class="font-semibold text-ink">GH₵ 300k</span></div>
-                    <div class="flex items-center justify-between"><span class="flex items-center gap-2 text-ink-soft"><span class="h-2 w-2 rounded-full bg-rose-500"></span> Disputes</span><span class="font-semibold text-ink">6</span></div>
+                    <div class="flex items-center justify-between"><span class="flex items-center gap-2 text-ink-soft"><span class="h-2 w-2 rounded-full bg-indigo-500"></span> Held funds</span><span class="font-semibold text-ink">GH₵ {{ number_format((float) $escrow['held'], 2) }}</span></div>
+                    <div class="flex items-center justify-between"><span class="flex items-center gap-2 text-ink-soft"><span class="h-2 w-2 rounded-full bg-primary-500"></span> Released</span><span class="font-semibold text-ink">GH₵ {{ number_format((float) $escrow['released'], 2) }}</span></div>
+                    <div class="flex items-center justify-between"><span class="flex items-center gap-2 text-ink-soft"><span class="h-2 w-2 rounded-full bg-rose-500"></span> Disputes</span><span class="font-semibold text-ink">{{ $escrow['disputes'] }}</span></div>
                 </div>
+                <a href="{{ route('admin.orders.index', ['filter' => 'escrow']) }}" class="btn-outline btn-sm mt-4 w-full">View escrow orders</a>
             </div>
 
             <div class="card p-5">
-                <h2 class="font-semibold text-ink">Fraud Monitoring</h2>
+                <h2 class="font-semibold text-ink">Open Disputes</h2>
                 <div class="mt-4 space-y-3">
-                    @foreach ([['QuickFix Repairs', 'Failed Ghana Card check', 'high'], ['GadgetPlug', 'Missing video verification', 'medium']] as [$name, $reason, $risk])
-                        @php $riskBadge = ['high' => 'badge-rejected', 'medium' => 'badge-pending'][$risk]; @endphp
-                        <div class="flex items-center justify-between rounded-xl bg-surface-muted p-3">
-                            <div>
-                                <p class="text-sm font-medium text-ink">{{ $name }}</p>
-                                <p class="text-xs text-ink-muted">{{ $reason }}</p>
+                    @forelse ($disputed as $order)
+                        <a href="{{ route('admin.orders.show', $order) }}" class="flex items-center justify-between rounded-xl bg-surface-muted p-3">
+                            <div class="min-w-0">
+                                <p class="truncate text-sm font-medium text-ink">{{ $order->order_number }}</p>
+                                <p class="truncate text-xs text-ink-muted">{{ $order->customer->name }} → {{ $order->operator->business_name }}</p>
                             </div>
-                            <span class="{{ $riskBadge }}">{{ ucfirst($risk) }}</span>
-                        </div>
-                    @endforeach
+                            <span class="badge-rejected shrink-0">GH₵ {{ number_format((float) $order->total, 2) }}</span>
+                        </a>
+                    @empty
+                        <p class="text-sm text-ink-muted">No open disputes. 🎉</p>
+                    @endforelse
                 </div>
             </div>
         </div>

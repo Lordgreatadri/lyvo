@@ -26,14 +26,29 @@ class OperatorApprovalController extends Controller
 
     public function index(): View
     {
+        $pending = OperatorProfile::with('user', 'category', 'media')
+            ->whereIn('verification_status', [
+                OperatorVerificationStatus::Pending->value,
+                OperatorVerificationStatus::InReview->value,
+            ])
+            ->latest()
+            ->get();
+
+        $operators = OperatorProfile::with('user:id,name,email', 'category:id,name')
+            ->withCount(['products as published_products_count' => fn ($q) => $q->published()])
+            ->orderByDesc('trust_score')
+            ->orderBy('business_name')
+            ->get();
+
         return view('admin.operators.index', [
-            'pending' => OperatorProfile::with('user', 'category', 'media')
-                ->whereIn('verification_status', [
-                    OperatorVerificationStatus::Pending->value,
-                    OperatorVerificationStatus::InReview->value,
-                ])
-                ->latest()
-                ->get(),
+            'pending'   => $pending,
+            'operators' => $operators,
+            'summary'   => [
+                'total'    => $operators->count(),
+                'approved' => $operators->where('verification_status', OperatorVerificationStatus::Approved)->count(),
+                'pending'  => $pending->count(),
+                'rejected' => $operators->where('verification_status', OperatorVerificationStatus::Rejected)->count(),
+            ],
         ]);
     }
 

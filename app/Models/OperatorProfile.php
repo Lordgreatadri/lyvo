@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Enums\OperatorVerificationStatus;
 use Dyrynda\Database\Support\BindsOnUuid;
 use Dyrynda\Database\Support\GeneratesUuid;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,7 +29,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  */
 class OperatorProfile extends Model implements HasMedia
 {
-    use BindsOnUuid, GeneratesUuid, InteractsWithMedia;
+    use BindsOnUuid, GeneratesUuid, HasFactory, InteractsWithMedia;
 
     protected $fillable = [
         'user_id',
@@ -80,6 +81,11 @@ class OperatorProfile extends Model implements HasMedia
     public function verificationEvents(): HasMany
     {
         return $this->hasMany(OperatorVerificationEvent::class);
+    }
+
+    public function products(): HasMany
+    {
+        return $this->hasMany(Product::class, 'operator_profile_id');
     }
 
     /* ----------------------------------------------------------------------
