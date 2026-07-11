@@ -1,9 +1,8 @@
 <x-layouts.onboarding title="Verification in progress">
 
     @php
-        use App\Enums\OperatorVerificationStatus;
-        $status = $profile?->verification_status ?? OperatorVerificationStatus::Pending;
-        $isRejected = $status === OperatorVerificationStatus::Rejected;
+        $status = $profile?->verification_status ?? \App\Enums\OperatorVerificationStatus::Pending;
+        $isRejected = $status === \App\Enums\OperatorVerificationStatus::Rejected;
         $operatorName = $profile?->owner_full_name ?? auth()->user()?->name;
         $firstName = \Illuminate\Support\Str::of((string) $operatorName)->trim()->explode(' ')->first();
         $businessName = $profile?->business_name;
