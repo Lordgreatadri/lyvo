@@ -86,7 +86,7 @@ class OrderController extends Controller
         $this->authorizeOrder($request, $order);
 
         $data = $request->validate([
-            'otp' => ['required', 'string', 'min:4', 'max:8'],
+            'otp' => ['required', 'integer', 'min:1000', 'max:99999999'],
         ]);
 
         $transaction = $order->payment;

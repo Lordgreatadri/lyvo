@@ -78,11 +78,18 @@ if (! function_exists('format_msisdn_local')) {
      *   format_msisdn_local('233543645688')  → '0543645688'
      *   format_msisdn_local('0543645688')    → '0543645688'
      *   format_msisdn_local('543645688')     → '0543645688'
+     *   format_msisdn_local('')              → ''  (no digits → let callers reject)
      */
     function format_msisdn_local(string $phone, string $countryCode = '233'): string
     {
         // Strip everything except digits (spaces, dashes, +, parentheses, …).
         $digits = preg_replace('/\D/', '', $phone);
+
+        // No usable digits — return empty so callers can fail validation cleanly
+        // rather than emitting a bogus '0' MSISDN.
+        if ($digits === '') {
+            return '';
+        }
 
         // Drop an international '00' dialling prefix (e.g. 00233… → 233…).
         if (str_starts_with($digits, '00')) {
@@ -94,6 +101,8 @@ if (! function_exists('format_msisdn_local')) {
             $digits = substr($digits, strlen($countryCode));
         }
 
-        return '0' . ltrim($digits, '0');
+        $local = ltrim($digits, '0');
+
+        return $local === '' ? '' : '0' . $local;
     }
 }

@@ -144,6 +144,12 @@ class PayoutService
      * Apply a settlement status to a payout row (used by the webhook and status
      * poller). Targets one indexed row by external ref; returns rows updated.
      *
+     * The update only ever matches a payout that is still open, so it atomically
+     * claims the transition: a callback delivered more than once updates zero
+     * rows on every repeat. This guarantees `completed_at` / `failed_at` are
+     * stamped exactly once and the recipient is notified only on the first move
+     * into Successful — a re-sent webhook is a harmless no-op.
+     *
      * @param  array<string, mixed>  $data
      */
     public function applyStatus(string $externalRef, PayoutStatus $status, array $data = []): int
@@ -166,7 +172,13 @@ class PayoutService
             $columns['failed_at'] = now();
         }
 
-        $updated = Payout::query()->where('ref', $externalRef)->update($columns);
+        // Never re-process a payout that has already settled — only open rows are
+        // eligible, which also makes the whole operation safe under duplicate
+        // and out-of-order gateway callbacks.
+        $updated = Payout::query()
+            ->where('ref', $externalRef)
+            ->whereNotIn('status', [PayoutStatus::Successful->value, PayoutStatus::Failed->value])
+            ->update($columns);
 
         if ($updated > 0 && $status === PayoutStatus::Successful) {
             $payout = Payout::where('ref', $externalRef)->first();

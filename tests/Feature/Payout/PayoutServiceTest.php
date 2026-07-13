@@ -85,4 +85,30 @@ class PayoutServiceTest extends TestCase
         $this->assertSame('AMA MENSAH', $payout->recipient_name);
         $this->assertNotNull($payout->completed_at);
     }
+
+    public function test_apply_status_is_idempotent_for_repeated_callbacks(): void
+    {
+        $payout = Payout::create([
+            'ref' => 'payout-dupe',
+            'provider' => 'log',
+            'channel' => PayoutChannel::Mtn,
+            'currency' => 'GHS',
+            'amount' => 60.0,
+            'recipient' => '0543645688',
+            'status' => PayoutStatus::Processing,
+            'context' => 'escrow-release',
+        ]);
+
+        /** @var PayoutService $service */
+        $service = app(PayoutService::class);
+
+        // First callback settles the payout.
+        $this->assertSame(1, $service->applyStatus('payout-dupe', PayoutStatus::Successful, ['transactionid' => 'PO-1']));
+        $settledAt = $payout->fresh()->completed_at;
+        $this->assertNotNull($settledAt);
+
+        // A re-sent callback must be a no-op — no row updated, timestamp unchanged.
+        $this->assertSame(0, $service->applyStatus('payout-dupe', PayoutStatus::Successful, ['transactionid' => 'PO-1']));
+        $this->assertEquals($settledAt, $payout->fresh()->completed_at);
+    }
 }
