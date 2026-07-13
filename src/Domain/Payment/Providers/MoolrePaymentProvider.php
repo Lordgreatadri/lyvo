@@ -21,8 +21,15 @@ use Src\Domain\Payment\DTOs\PaymentResult;
  * Status:   POST /open/transact/status   { type:1, idtype:"externalref", id, accountnumber }
  *
  * A Moolre success is signalled by status === 1 in the JSON body (not merely a
- * 200 HTTP code). Response code TP14 means an OTP was required and sent to the
- * payer, so the caller must resubmit with the OTP.
+ * 200 HTTP code). The collection uses a three-step, OTP-gated flow:
+ *   1. charge (empty otpcode)  → code TP14: an OTP is sent to the payer.
+ *   2. charge (with otpcode)   → code TP17: the payer's number is verified.
+ *   3. charge (same payload)   → code TR099: the payment is initiated and a
+ *      provider transaction id is returned in `data`. Settlement then arrives
+ *      asynchronously on the payment webhook.
+ *
+ * The payer number is sent in Ghana local format (e.g. 0543645688) — never the
+ * +233 international form — which is what the Moolre transaction API expects.
  */
 final class MoolrePaymentProvider implements PaymentProviderInterface
 {
@@ -35,16 +42,25 @@ final class MoolrePaymentProvider implements PaymentProviderInterface
     /** Response code returned when an OTP is required and has been sent. */
     private const CODE_OTP_REQUIRED = 'TP14';
 
+    /** Response code returned once the payer's number has been verified. */
+    private const CODE_OTP_VERIFIED = 'TP17';
+
+    /** Response code returned once the payment has been initiated. */
+    private const CODE_PAYMENT_INITIATED = 'TR099';
+
     private readonly Client $http;
 
     private readonly string $accountNumber;
 
+    private readonly string $countryCode;
+
     /**
-     * @param  array{base_uri?:string, api_user?:?string, pub_key?:?string, account_number?:?string, timeout?:int}  $config
+     * @param  array{base_uri?:string, api_user?:?string, pub_key?:?string, account_number?:?string, country_code?:?string, timeout?:int}  $config
      */
     public function __construct(array $config, ?Client $http = null)
     {
         $this->accountNumber = (string) ($config['account_number'] ?? '');
+        $this->countryCode = (string) ($config['country_code'] ?? config('payment.country_code', '233'));
 
         $this->http = $http ?? new Client([
             'base_uri' => rtrim($config['base_uri'] ?? 'https://api.moolre.com', '/') . '/',
@@ -69,7 +85,7 @@ final class MoolrePaymentProvider implements PaymentProviderInterface
             'type' => self::TYPE_PAYMENT,
             'channel' => $request->channel->moolreCode(),
             'currency' => $request->currency,
-            'payer' => ltrim($request->payer, '+'),
+            'payer' => format_msisdn_local($request->payer, $this->countryCode),
             'amount' => (string) $request->amount,
             'externalref' => $request->externalRef,
             'otpcode' => $request->otpCode,
@@ -78,6 +94,19 @@ final class MoolrePaymentProvider implements PaymentProviderInterface
             'accountnumber' => $request->accountNumber ?: $this->accountNumber,
         ], static fn ($v): bool => $v !== null && $v !== '');
 
+        return $this->send($payload);
+    }
+
+    /**
+     * POST a charge payload and interpret Moolre's OTP-gated response. When the
+     * payer's number has just been verified (TP17) the same payload is re-sent
+     * once to initiate the payment (step 3), so the caller drives the whole flow
+     * with a single submitOtp() call.
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function send(array $payload, bool $allowVerifyRetry = true): PaymentResult
+    {
         try {
             $body = $this->post(self::PAYMENT_PATH, $payload);
         } catch (RequestException $e) {
@@ -93,10 +122,9 @@ final class MoolrePaymentProvider implements PaymentProviderInterface
         }
 
         $code = (string) ($body['code'] ?? '');
-        $data = is_array($body['data'] ?? null) ? $body['data'] : [];
-        $providerRef = isset($data['transactionid']) ? (string) $data['transactionid'] : null;
+        $providerRef = $this->resolveProviderRef($body);
 
-        // TP14 → the payer must supply an OTP before the prompt can be triggered.
+        // TP14 → the payer must supply the OTP before the payment can proceed.
         if ($code === self::CODE_OTP_REQUIRED) {
             return PaymentResult::accepted(
                 PaymentStatus::AwaitingOtp,
@@ -108,7 +136,14 @@ final class MoolrePaymentProvider implements PaymentProviderInterface
             );
         }
 
-        // Otherwise the USSD approval prompt has been dispatched to the handset.
+        // TP17 → the number is now verified; re-send the same payload once to
+        // initiate the actual payment (Moolre step 3 → TR099).
+        if ($code === self::CODE_OTP_VERIFIED && $allowVerifyRetry) {
+            return $this->send($payload, allowVerifyRetry: false);
+        }
+
+        // TR099 (or any other accepted code) → the payment has been dispatched
+        // and will settle asynchronously on the webhook.
         return PaymentResult::accepted(
             PaymentStatus::AwaitingApproval,
             $code ?: 'OK',
@@ -116,6 +151,28 @@ final class MoolrePaymentProvider implements PaymentProviderInterface
             $providerRef,
             raw: $body,
         );
+    }
+
+    /**
+     * Extract a provider transaction id from a charge response. On TR099 the id
+     * is the plain string in `data`; on other responses it is nested under
+     * `data.transactionid`.
+     *
+     * @param  array<string, mixed>  $body
+     */
+    private function resolveProviderRef(array $body): ?string
+    {
+        $data = $body['data'] ?? null;
+
+        if (is_array($data) && isset($data['transactionid'])) {
+            return (string) $data['transactionid'];
+        }
+
+        if (is_string($data) && (string) ($body['code'] ?? '') === self::CODE_PAYMENT_INITIATED) {
+            return $data;
+        }
+
+        return null;
     }
 
     public function status(string $externalRef): PaymentResult

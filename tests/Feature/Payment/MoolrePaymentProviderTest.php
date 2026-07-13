@@ -82,9 +82,50 @@ class MoolrePaymentProviderTest extends TestCase
         $body = json_decode((string) $request->getBody(), true);
         $this->assertSame(1, $body['type']);
         $this->assertSame(PaymentChannel::Mtn->moolreCode(), $body['channel']);
-        $this->assertSame('233201234567', $body['payer']); // '+' stripped
+        $this->assertSame('0201234567', $body['payer']); // Ghana local format — no +233
         $this->assertSame('pay-ref-1', $body['externalref']);
         $this->assertSame('10000123', $body['accountnumber']);
+    }
+
+    public function test_otp_verified_response_auto_initiates_payment(): void
+    {
+        // Step 2 (TP17 — number verified) is followed automatically by a second
+        // POST that reaches step 3 (TR099 — payment initiated). The provider
+        // drives both from a single charge() call carrying the OTP.
+        $provider = $this->provider([
+            new Response(200, [], json_encode([
+                'status' => 1,
+                'code' => 'TP17',
+                'message' => 'The customer number has been verified.',
+            ])),
+            new Response(200, [], json_encode([
+                'status' => 1,
+                'code' => 'TR099',
+                'message' => 'Payment initiated.',
+                'data' => 'TX-INIT-1',
+            ])),
+        ]);
+
+        $result = $provider->charge(new PaymentRequestDto(
+            amount: 25.0,
+            payer: '+233201234567',
+            channel: PaymentChannel::Mtn,
+            externalRef: 'pay-ref-2',
+            currency: 'GHS',
+            accountNumber: '10000123',
+            otpCode: '123456',
+        ));
+
+        $this->assertTrue($result->success);
+        $this->assertFalse($result->otpRequired);
+        $this->assertSame(PaymentStatus::AwaitingApproval, $result->status);
+        $this->assertSame('TR099', $result->code);
+        $this->assertSame('TX-INIT-1', $result->providerTransactionId);
+
+        // Two requests were made (verify → initiate) with the same OTP payload.
+        $this->assertCount(2, $this->history);
+        $second = json_decode((string) $this->history[1]['request']->getBody(), true);
+        $this->assertSame('123456', $second['otpcode']);
     }
 
     public function test_charge_accepted_moves_to_awaiting_approval(): void

@@ -37,6 +37,23 @@ return [
             'store_attachments' => false,
             'process_webhook_job' => \App\Jobs\ProcessMoolrePaymentWebhookJob::class,
         ],
+        [
+            /*
+             * Moolre payout (transfer) settlement callbacks. Like the payment
+             * callback, the shared secret is carried in the request body
+             * (data.secret). The job reconciles the referenced payout's status.
+             */
+            'name' => 'moolre-payout',
+            'signing_secret' => env('MOOLRE_WEBHOOK_SECRET'),
+            'signature_header_name' => 'X-Moolre-Signature',
+            'signature_validator' => \App\Support\Webhooks\MoolrePaymentSignatureValidator::class,
+            'webhook_profile' => \Spatie\WebhookClient\WebhookProfile\ProcessEverythingWebhookProfile::class,
+            'webhook_response' => \Spatie\WebhookClient\WebhookResponse\DefaultRespondsTo::class,
+            'webhook_model' => \Spatie\WebhookClient\Models\WebhookCall::class,
+            'store_headers' => [],
+            'store_attachments' => false,
+            'process_webhook_job' => \App\Jobs\ProcessMoolrePayoutWebhookJob::class,
+        ],
     ],
 
     /*

@@ -67,6 +67,10 @@ class Permissions
     public const PAYMENTS_VIEW = 'payments.view';
     public const PAYMENTS_MANAGE = 'payments.manage';
 
+    // ---- Payouts (disbursements) --------------------------------------------
+    public const PAYOUTS_VIEW = 'payouts.view';
+    public const PAYOUTS_MANAGE = 'payouts.manage';
+
     // ---- Customer self-service ---------------------------------------------
     public const ADDRESSES_MANAGE = 'addresses.manage';
     public const PAYMENT_METHODS_MANAGE = 'payment-methods.manage';
@@ -129,6 +133,10 @@ class Permissions
             'Payments (gateway)' => [
                 self::PAYMENTS_VIEW => 'View payment transactions and settlement analytics',
                 self::PAYMENTS_MANAGE => 'Configure the payment gateway and reconcile transactions',
+            ],
+            'Payouts (disbursements)' => [
+                self::PAYOUTS_VIEW => 'View payouts sent to operators and their status',
+                self::PAYOUTS_MANAGE => 'Validate recipients and disburse funds to operators',
             ],
             'Customer self-service' => [
                 self::ADDRESSES_MANAGE => 'Manage delivery addresses',

@@ -4,6 +4,53 @@ All notable changes to the LYVO platform are documented here. Dates use `YYYY-MM
 
 ---
 
+## [Unreleased] — Payments — OTP collection flow + Payout (disbursements)
+
+> Completes the Moolre money-movement layer: the collection now drives Moolre's full
+> three-step, OTP-gated flow, and a new **Payout** domain lets admins disburse escrow funds
+> to operators' mobile-money wallets when an order is released.
+
+### Added
+
+**Payout domain (disbursements)**
+- `Src\Domain\Payout` — a swappable-provider disbursement layer mirroring the payment
+  domain: `PayoutService` (validate name → `pay()` → reconcile), `PayoutProviderInterface`,
+  a live `MoolrePayoutProvider` (X-API-USER + **X-API-KEY** private key; validate / transfer
+  / status) and a network-free `LogPayoutProvider`, plus `PayoutRequestDto` / `PayoutResult`.
+- `Enums\PayoutChannel` (MTN/Telecel/AirtelTigo/Bank — **transfer** channel codes, which
+  differ from collections: MTN `1` not `13`) and `Enums\PayoutStatus`
+  (pending/processing/successful/failed/unknown; `unknown` is held open, never failed).
+- `Models\Payout` + `payouts` migration (uuid-routed, polymorphic `payable`, indexed on
+  `[status, created_at]`, `recipient`, `user_id`, `context`, `provider_transaction_id`).
+- Settlement webhook **`POST /api/webhooks/moolre/payout`** (`moolre-payout` config +
+  `ProcessMoolrePayoutWebhookJob`), matched to a payout by `externalref`.
+- `PayoutServiceProvider` (deferred; binds the provider via the runtime `PaymentSetting`),
+  and permissions `payouts.view` / `payouts.manage` (**Payouts (disbursements)** group).
+
+**Admin payout UI**
+- `Admin\PayoutController` + `admin.payouts.*` routes and a **Payouts** dashboard: totals +
+  status breakdown, an *Awaiting payout* queue of released orders, a paginated payout log
+  with status filter and per-row status refresh, and a manual-payout form.
+- Inline **Pay operator** action on released orders (with a live *Validate name* check) and
+  a payout status card with a *Refresh status* button.
+
+### Changed
+
+**Collection OTP flow (three-step)**
+- `MoolrePaymentProvider` now drives Moolre's full flow: `TP14` (OTP sent → `awaiting_otp`)
+  → `TP17` (verified) → auto re-POST → `TR099` (initiated). A single `submitOtp()` call
+  completes steps 2–3. Customers enter the OTP from the order page
+  (`PATCH /customer/orders/{order}/otp` → `CustomerOrderController@submitOtp`).
+- The payer/receiver number is now sent to Moolre in **Ghana local format** (`0543645688`)
+  via the new `format_msisdn_local()` helper — never the `+233…` international form.
+
+### Fixed
+
+- `MoolreSmsProvider` referenced a non-existent `SmsResult::$code` when logging a batch
+  (should be `$status`), which threw on every live SMS send / batch log. Now fixed.
+
+---
+
 ## [Unreleased] — Marketplace — Phase 2A (Catalogue foundation)
 
 > Approved operators can now list items for sale and a public marketplace surfaces them.

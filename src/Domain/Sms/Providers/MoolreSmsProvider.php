@@ -109,6 +109,22 @@ final class MoolreSmsProvider implements SmsProviderInterface
                 $body,
             );
 
+            logger()->channel(config('sms.log_channel'))->info('Moolre send batch', [
+                'success' => $success,
+                'sender_id' => $senderId,
+                'messages' => array_map(static fn (SmsMessageDto $m): array => [
+                    'ref' => $m->ref,
+                    'recipient' => $m->recipient,
+                    'message' => $m->message,
+                ], $messages),
+                'result' => [
+                    'code' => $result->status,
+                    'message' => $result->message,
+                    'provider_id' => $result->providerId,
+                    'raw_response' => $result->rawResponse,
+                ],
+            ]);
+
         // Moolre returns a single status for the whole batch; fan it out per ref.
         return $this->mapAll($messages, $result);
     }
@@ -155,6 +171,11 @@ final class MoolreSmsProvider implements SmsProviderInterface
             return ['balance' => 0.0, 'raw' => []];
         }
 
+        logger()->channel(config('sms.log_channel'))->info('Moolre balance query', [
+            'balance' => (float) ($body['data']['balance'] ?? 0),
+            'raw' => $body,
+        ]);
+
         return [
             'balance' => (float) ($body['data']['balance'] ?? 0),
             'raw' => $body,
@@ -172,6 +193,11 @@ final class MoolreSmsProvider implements SmsProviderInterface
 
             return [];
         }
+
+        logger()->channel(config('sms.log_channel'))->info('Moolre sender-id query', [
+            'count' => count($body['data'] ?? []),
+            'raw' => $body,
+        ]);
 
         return array_map(static fn (array $entry): array => [
             'id' => isset($entry['id']) ? (int) $entry['id'] : null,
@@ -195,6 +221,13 @@ final class MoolreSmsProvider implements SmsProviderInterface
                 'Content-Type' => 'application/json',
                 'Accept' => 'application/json',
             ],
+        ]);
+
+        logger()->channel(config('sms.log_channel'))->info('Moolre POST request', [
+            'path' => $path,
+            'payload' => $payload,
+            'status_code' => $response->getStatusCode(),
+            'response_body' => (string) $response->getBody(),
         ]);
 
         return json_decode((string) $response->getBody(), true) ?? [];

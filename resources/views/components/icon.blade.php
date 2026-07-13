@@ -45,6 +45,7 @@
         'box' => '<path d="m12 2 9 5v10l-9 5-9-5V7Z"/><path d="m3 7 9 5 9-5M12 12v10"/>',
         'chart' => '<path d="M4 4v16h16"/><path d="M8 16v-4M12 16V8M16 16v-7"/>',
         'globe' => '<circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3c3 3 3 15 0 18M12 3c-3 3-3 15 0 18"/>',
+        'refresh' => '<path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v5h-5"/>',
     ];
     $path = $paths[$name] ?? $paths['shield'];
 @endphp

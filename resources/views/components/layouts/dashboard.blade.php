@@ -35,6 +35,7 @@
             ['label' => 'Verification', 'icon' => 'shield',   'route' => 'admin.verification', 'primary' => true],
             ['label' => 'Users',        'icon' => 'users',    'route' => 'admin.users.index', 'match' => 'admin.users.*'],
             ['label' => 'Roles',        'icon' => 'lock',     'route' => 'admin.roles.index', 'match' => 'admin.roles.*'],
+            ['label' => 'Payouts',      'icon' => 'wallet',   'route' => 'admin.payouts.index', 'match' => 'admin.payouts.*'],
             ['label' => 'SMS',          'icon' => 'inbox',    'route' => 'admin.sms.index'],
             ['label' => 'Settings',     'icon' => 'settings', 'route' => 'profile.edit', 'primary' => true],
         ],
@@ -197,6 +198,8 @@
             @endforeach
         </div>
     </nav>
+
+    @stack('scripts')
 
 </body>
 </html>
