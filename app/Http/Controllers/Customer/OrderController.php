@@ -10,6 +10,7 @@ use Illuminate\View\View;
 use RuntimeException;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Src\Domain\Commerce\EscrowService;
+use Src\Domain\Payment\PaymentService;
 
 /**
  * Customer OrderController
@@ -73,6 +74,34 @@ class OrderController extends Controller
         }
 
         return back()->with('success', 'Dispute submitted — our team will review it shortly.');
+    }
+
+    /**
+     * Submit the OTP Moolre sent to the payer to authorise the collection. The
+     * PaymentService verifies the number and initiates the payment; settlement
+     * then advances the order to escrow via the payment webhook.
+     */
+    public function submitOtp(Request $request, Order $order, PaymentService $payments): RedirectResponse
+    {
+        $this->authorizeOrder($request, $order);
+
+        $data = $request->validate([
+            'otp' => ['required', 'string', 'min:4', 'max:8'],
+        ]);
+
+        $transaction = $order->payment;
+
+        if ($transaction === null || $transaction->status !== \App\Enums\PaymentStatus::AwaitingOtp) {
+            return back()->with('error', 'This payment is not awaiting an OTP.');
+        }
+
+        $transaction = $payments->submitOtp($transaction, $data['otp']);
+
+        if ($transaction->status === \App\Enums\PaymentStatus::Failed) {
+            return back()->with('error', $transaction->failure_reason ?: 'That OTP could not be verified. Please try again.');
+        }
+
+        return back()->with('success', 'OTP verified — approve the payment prompt on your phone to protect your funds in escrow.');
     }
 
     private function authorizeOrder(Request $request, Order $order): void

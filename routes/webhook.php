@@ -26,3 +26,6 @@ Route::webhooks('moolre/sms', 'moolre');
 
 // Moolre payment settlement callbacks -> POST /api/webhooks/moolre/payment
 Route::webhooks('moolre/payment', 'moolre-payment');
+
+// Moolre payout (transfer) settlement callbacks -> POST /api/webhooks/moolre/payout
+Route::webhooks('moolre/payout', 'moolre-payout');

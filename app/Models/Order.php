@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 /**
  * Order
@@ -89,6 +90,26 @@ class Order extends Model
     public function events(): HasMany
     {
         return $this->hasMany(EscrowEvent::class)->latest();
+    }
+
+    /** Disbursements (transfers) made to the operator for this order. */
+    public function payouts(): MorphMany
+    {
+        return $this->morphMany(Payout::class, 'payable')->latest();
+    }
+
+    /** The most recent payout for this order, if any (successful or in-flight). */
+    public function latestPayout(): ?Payout
+    {
+        return $this->payouts()->first();
+    }
+
+    /** True once a payout for this order has settled successfully. */
+    public function isPaidOut(): bool
+    {
+        return $this->payouts()
+            ->where('status', \App\Enums\PayoutStatus::Successful->value)
+            ->exists();
     }
 
     /* ----------------------------------------------------------------------

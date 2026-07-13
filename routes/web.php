@@ -3,6 +3,7 @@
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\OperatorApprovalController;
 use App\Http\Controllers\Admin\OrderController as AdminOrderController;
+use App\Http\Controllers\Admin\PayoutController as AdminPayoutController;
 use App\Http\Controllers\Admin\RoleController as AdminRoleController;
 use App\Http\Controllers\Admin\SmsController as AdminSmsController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
@@ -76,6 +77,7 @@ Route::middleware(['auth', 'verified.contacts', 'account:customer'])->group(func
     Route::get('/customer/orders/{order}', [CustomerOrderController::class, 'show'])->name('customer.orders.show');
     Route::patch('/customer/orders/{order}/confirm', [CustomerOrderController::class, 'confirm'])->name('customer.orders.confirm');
     Route::patch('/customer/orders/{order}/dispute', [CustomerOrderController::class, 'dispute'])->name('customer.orders.dispute');
+    Route::patch('/customer/orders/{order}/otp', [CustomerOrderController::class, 'submitOtp'])->name('customer.orders.otp');
 
     // Escrow checkout for a public product
     Route::get('/checkout/{product}', [CheckoutController::class, 'create'])->name('checkout.create');
@@ -161,6 +163,12 @@ Route::middleware(['auth', 'verified.contacts', 'account:admin'])->group(functio
     Route::put('/admin/sms/settings', [AdminSmsController::class, 'updateSettings'])->name('admin.sms.settings');
     Route::post('/admin/sms/balance', [AdminSmsController::class, 'refreshBalance'])->name('admin.sms.balance');
     Route::post('/admin/sms/test', [AdminSmsController::class, 'sendTest'])->name('admin.sms.test');
+
+    // Payouts (disbursements) console — release escrow funds to operators
+    Route::get('/admin/payouts', [AdminPayoutController::class, 'index'])->name('admin.payouts.index');
+    Route::post('/admin/payouts', [AdminPayoutController::class, 'store'])->name('admin.payouts.store');
+    Route::post('/admin/payouts/validate', [AdminPayoutController::class, 'validateName'])->name('admin.payouts.validate');
+    Route::post('/admin/payouts/{payout}/status', [AdminPayoutController::class, 'refreshStatus'])->name('admin.payouts.status');
 });
 
 // ---------- Authenticated profile + generic dashboard redirect ----------
