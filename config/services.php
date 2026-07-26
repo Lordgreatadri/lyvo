@@ -30,5 +30,10 @@ return [
         'secret' => env('AWS_SECRET_ACCESS_KEY'),
         'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
     ],
-
+    'frogsms' => [
+        'base_url' => env('FROGSMS_BASE_URL', 'https://frog.wigal.com.gh/ismsweb/sendmsg'),
+        'username' => env('FROGSMS_USERNAME'),
+        'password' => env('FROGSMS_PASSWORD'),
+        'senderid' => env('FROGSMS_SENDER_ID'),
+    ],
 ];
